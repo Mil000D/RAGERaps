@@ -1,0 +1,39 @@
+<section class="battle-config">
+  <div class="container config-container">
+    <h2 class="section-title">Configure Your Rap Battle</h2>
+    
+    <div class="rapper-selection">
+      <div class="rapper-column">
+        <h3><span>1</span> First Rapper</h3>
+        <div class="input-group">
+          <label for="rapper1Name">Rapper Name</label>
+          <input type="text" id="rapper1Name" class="text-input" [(ngModel)]="rapper1Name" placeholder="Enter rapper name">
+        </div>
+        <div class="input-group">
+          <label for="rapper1Style">Rap Style</label>
+          <input type="text" id="rapper1Style" class="text-input" [(ngModel)]="rapper1Style" placeholder="Enter rap style (e.g. Trap, Old School)">
+        </div>
+      </div>
+      
+      <div class="versus">
+        <div class="versus-circle">VS</div>
+      </div>
+      
+      <div class="rapper-column">
+        <h3><span>2</span> Second Rapper</h3>
+        <div class="input-group">
+          <label for="rapper2Name">Rapper Name</label>
+          <input type="text" id="rapper2Name" class="text-input" [(ngModel)]="rapper2Name" placeholder="Enter rapper name">
+        </div>
+        <div class="input-group">
+          <label for="rapper2Style">Rap Style</label>
+          <input type="text" id="rapper2Style" class="text-input" [(ngModel)]="rapper2Style" placeholder="Enter rap style (e.g. Fast Flow, Melodic)">
+        </div>
+      </div>
+    </div>
+    
+    <button class="start-battle-btn" [disabled]="!isValidConfig()" (click)="startBattle()">
+      START BATTLE
+    </button>
+  </div>
+</section>

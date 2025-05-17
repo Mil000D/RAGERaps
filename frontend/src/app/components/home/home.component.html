@@ -1,0 +1,68 @@
+<div class="home">
+  <section class="hero">
+    <div class="container hero-content">
+      <h1 class="hero-title">Epic AI Rap Battles</h1>
+      <p class="hero-subtitle">
+        Create amazing rap battles between any artists using artificial intelligence.
+        Customize topics, styles, and watch as our AI delivers authentic verses and judges the winner.
+      </p>
+      <a routerLink="/battle" class="cta-button">Start a Battle</a>
+    </div>
+  </section>
+  
+  <section class="features">
+    <div class="container">
+      <h2 class="section-title">Battle Features</h2>
+      <div class="features-grid">
+        <div class="feature-card" *ngFor="let feature of features">
+          <div class="feature-icon">{{ feature.icon }}</div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-description">{{ feature.description }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="how-it-works">
+    <div class="container">
+      <h2 class="section-title">How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-content">
+            <div class="step-number">1</div>
+            <h3 class="step-title">Choose Your Rappers</h3>
+            <p class="step-description">
+              Select any two rappers from our extensive library to go head-to-head in a lyrical battle.
+              Each rapper has unique characteristics that influence their style and flow.
+            </p>
+          </div>
+          <div class="step-image"></div>
+        </div>
+        
+        <div class="step">
+          <div class="step-content">
+            <div class="step-number">2</div>
+            <h3 class="step-title">Configure the Battle</h3>
+            <p class="step-description">
+              Set the number of rounds, choose topics, and select rap styles to create a custom battle experience.
+              From street battles to conscious rap, you control the direction.
+            </p>
+          </div>
+          <div class="step-image"></div>
+        </div>
+        
+        <div class="step">
+          <div class="step-content">
+            <div class="step-number">3</div>
+            <h3 class="step-title">Watch the Battle Unfold</h3>
+            <p class="step-description">
+              Witness as AI-generated verses bring your rap battle to life. After each round, our judging algorithm 
+              analyzes both verses and determines the winner based on complex metrics like flow, wordplay, and delivery.
+            </p>
+          </div>
+          <div class="step-image"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

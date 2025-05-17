@@ -1,0 +1,187 @@
+.battle-arena {
+  padding: 2rem 0;
+}
+
+.arena-container {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.arena-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.arena-title {
+  color: var(--light-text);
+  margin: 0;
+}
+
+.title-highlight {
+  color: var(--secondary-color);
+}
+
+.versus-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.rapper-info {
+  flex: 1;
+  text-align: center;
+  padding: 1rem;
+}
+
+.rapper-initial {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  background-color: var(--primary-color);
+  color: var(--light-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 3rem;
+}
+
+.rapper-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.versus-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+  color: var(--light-text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.battle-info {
+  background-color: #2a2a2a;
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 2rem;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.info-label {
+  font-weight: 700;
+  width: 120px;
+}
+
+.loading-container, .generating-container {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.loading-text, .generating-text {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  animation: pulse 1.5s infinite;
+}
+
+.next-round-btn {
+  background-color: var(--accent-color);
+  color: var(--light-text);
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.next-round-btn:hover {
+  background-color: #e07415;
+}
+
+.battle-result {
+  text-align: center;
+  padding: 2rem;
+  margin-top: 2rem;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+}
+
+.result-title {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.winner-name {
+  font-size: 2.5rem;
+  color: var(--winner-color);
+  margin-bottom: 2rem;
+}
+
+.result-score {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.score-value {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.winner-score {
+  color: var(--winner-color);
+}
+
+.loser-score {
+  color: var(--loser-color);
+}
+
+.new-battle-btn {
+  background-color: var(--primary-color);
+  color: var(--light-text);
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.new-battle-btn:hover {
+  background-color: #5e3ba1;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+  .versus-display {
+    flex-direction: column;
+  }
+  
+  .versus-circle {
+    margin: 1rem 0;
+  }
+}

@@ -1,0 +1,45 @@
+<div class="battle-display">
+  <div class="round-header">
+    <h3 class="round-title">
+      <span class="round-number">{{ roundNumber }}</span>
+      Round {{ roundNumber }}
+    </h3>
+    <p class="round-progress">{{ roundNumber }} of {{ totalRounds }}</p>
+  </div>
+  
+  <div class="verses-container">
+    <div class="verse-card" [ngClass]="getWinnerClass(round.verse1.rapper)" *ngIf="round.verse1">
+      <div class="verse-header">
+        <div class="verse-rapper-initial">{{ getInitial(round.verse1.rapper.name) }}</div>
+        <div>
+          <h4 class="verse-rapper-name">{{ round.verse1.rapper.name }}</h4>
+        </div>
+      </div>
+      <p class="verse-text">{{ round.verse1.text }}</p>
+    </div>
+    
+    <div class="verse-card" [ngClass]="getWinnerClass(round.verse2.rapper)" *ngIf="round.verse2">
+      <div class="verse-header">
+        <div class="verse-rapper-initial">{{ getInitial(round.verse2.rapper.name) }}</div>
+        <div>
+          <h4 class="verse-rapper-name">{{ round.verse2.rapper.name }}</h4>
+        </div>
+      </div>
+      <p class="verse-text">{{ round.verse2.text }}</p>
+    </div>
+  </div>
+  
+  <div class="judge-container" *ngIf="!isJudging && !judgeResult">
+    <button class="judge-btn" (click)="startJudging()">Judge This Round</button>
+  </div>
+  
+  <div class="judge-container" *ngIf="isJudging && !judgeResult">
+    <p class="judging-message">Judges are deliberating...</p>
+  </div>
+  
+  <div class="judge-container" *ngIf="judgeResult">
+    <div class="judge-result">
+      <p>Round {{ roundNumber }} Winner: <strong>{{ round.winner?.name }}</strong></p>
+    </div>
+  </div>
+</div>
