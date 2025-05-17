@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from app.api.router import api_router
 from app.db.database import db
+from app.agents.rapper_agent import rapper_agent, initialize_rapper_agent
 
 # Load environment variables
 load_dotenv()
@@ -27,6 +28,15 @@ async def lifespan(app: FastAPI):
     """
     # Initialize the database
     await db.initialize()
+
+    # Initialize the rapper agent with MCP tools
+    try:
+        print("Initializing rapper agent with MCP tools...")
+        await initialize_rapper_agent()
+        print("Rapper agent initialized successfully.")
+    except Exception as e:
+        print(f"Warning: Failed to initialize rapper agent with MCP tools: {str(e)}")
+        print("The application will continue, but search functionality may be limited.")
 
     yield
 

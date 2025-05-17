@@ -1,0 +1,14 @@
+[project]
+name = "mcp-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp>=2.3.4",
+    "langchain-community>=0.3.24",
+    "langchain-core>=0.3.60",
+    "langchain-tavily>=0.1.6",
+    "tavily-python>=0.7.2",
+    "wikipedia>=1.4.0",
+]

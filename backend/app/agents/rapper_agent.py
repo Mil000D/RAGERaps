@@ -9,9 +9,9 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, add_messages
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
-from app.tools.search_tool import search_tool
 from app.tools.style_tool import style_tool
 
 
@@ -38,19 +38,73 @@ class RapperAgent:
             streaming=False
         )
 
-        # Define tools
-        self.tools = [
-            search_tool.search,
-            search_tool.get_rapper_info,
-            style_tool.get_style,
-            style_tool.search_styles
-        ]
+        # Initialize tools
+        self.tools = []
 
-        # Bind tools to the LLM
+        # # Add style tools
+        # self.tools.extend([
+        #     style_tool.get_style,
+        #     style_tool.search_styles
+        # ])
+
+        # Initialize MCP tools (will be loaded asynchronously)
+        self.mcp_tools = []
+
+        # Bind tools to the LLM (will be updated with MCP tools)
         self.llm_with_tools = self.llm.bind_tools(self.tools)
 
-        # Create the graph
+        # Create the graph with the tools we have available
+        # This ensures we have a working graph even if MCP tools fail to load
         self.graph = self._create_graph()
+
+    async def _init_mcp_tools(self, server_url="http://localhost:8888/mcp"):
+        """
+        Initialize MCP tools from the server.
+
+        Args:
+            server_url: URL of the MCP server
+
+        Returns:
+            bool: True if MCP tools were successfully initialized, False otherwise
+        """
+        try:
+            print(f"Connecting to MCP server at {server_url}...")
+
+            # Connect to the MCP server
+            client = MultiServerMCPClient(
+                {
+                    "search": {
+                        "url": server_url,
+                        "transport": "streamable_http",
+                    }
+                }
+            )
+
+            # Get all tools from the server
+            print("Fetching tools from MCP server...")
+            self.mcp_tools = await client.get_tools()
+            print(f"Retrieved {len(self.mcp_tools)} tools from MCP server")
+
+            if not self.mcp_tools:
+                print("Warning: No tools were retrieved from the MCP server")
+                return False
+
+            # Add MCP tools to the tools list
+            self.tools.extend(self.mcp_tools)
+
+            # Update the LLM with tools
+            self.llm_with_tools = self.llm.bind_tools(self.tools)
+
+            # Create the graph with updated tools
+            self.graph = self._create_graph()
+
+            print("MCP tools successfully initialized and integrated")
+            return True
+        except Exception as e:
+            print(f"Error initializing MCP tools: {str(e)}")
+            print("The application will continue with style tools only")
+            # We already created the graph in __init__ with style tools only
+            return False
 
     def _create_graph(self) -> StateGraph:
         """
@@ -116,6 +170,12 @@ class RapperAgent:
             str: Generated verse
         """
         try:
+            # Initialize MCP tools if not already initialized
+            if self.graph is None:
+                print("Graph not initialized. Creating graph with available tools...")
+                # Create the graph with whatever tools we have available
+                self.graph = self._create_graph()
+
             # Create the system message
             system_message = self._create_system_message(
                 rapper_name, opponent_name, style, round_number, previous_verses
@@ -142,8 +202,9 @@ class RapperAgent:
             verse_content = self._extract_verse(result["messages"])
 
             return verse_content
-        except Exception:
-            return "Error generating verse."
+        except Exception as e:
+            print(f"Error generating verse: {str(e)}")
+            return f"Error generating verse: {str(e)}"
 
     def _create_system_message(
         self,
@@ -170,8 +231,12 @@ class RapperAgent:
 Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
 
 Follow these guidelines:
-1. Research {rapper_name} style, background, and facts using the search tools
-2. Research the {style} rap style using the style tools
+1. Research {rapper_name} style, background, and facts using the available search tools.
+   Use any of these tools if they are available:
+   - search_internet or search_wikipedia for general information
+   - search_rapper_info or search_rapper_wikipedia specifically for rapper information
+   - search for general web searches
+2. Research the {style} rap style using the style tools (get_style, search_styles)
 3. Create a verse that incorporates elements of {style} and {rapper_name}'s persona
 4. Make references to real facts about {rapper_name} and diss {opponent_name}
 5. Keep the verse between 8-16 lines
@@ -236,3 +301,11 @@ Follow these guidelines:
 
 # Create a rapper agent instance
 rapper_agent = RapperAgent()
+
+# Define an initialization function that will be called from the application startup
+async def initialize_rapper_agent():
+    """Initialize the rapper agent with MCP tools."""
+    await rapper_agent._init_mcp_tools()
+
+# Note: This function will be called during application startup
+# We don't call it here to avoid the "no running event loop" error
