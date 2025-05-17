@@ -26,8 +26,11 @@ else:
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
 
+
 # Create the MCP server
 mcp = FastMCP("RAGERaps Search Tools", port=8888)
+
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Initialize Wikipedia tool
 wikipedia_wrapper = WikipediaAPIWrapper(
