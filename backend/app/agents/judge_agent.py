@@ -105,6 +105,7 @@ Please judge this round and determine the winner.
 
             return winner, feedback
         except Exception:
+            winner = "Error"
             feedback = f"Exception occurred while judging the round. Try again."
             return winner, feedback
 
