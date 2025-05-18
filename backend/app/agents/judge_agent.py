@@ -105,22 +105,7 @@ Please judge this round and determine the winner.
 
             return winner, feedback
         except Exception:
-            # If anything goes wrong, provide a default judgment
-            import random
-            winner = rapper1_name if random.random() < 0.5 else rapper2_name
-            feedback = f"""
-Analysis of {rapper1_name}'s verse:
-{rapper1_name} delivered a verse with interesting wordplay and flow.
-
-Analysis of {rapper2_name}'s verse:
-{rapper2_name} showed creativity and technical skill in their delivery.
-
-Comparison:
-Both rappers showed skill, but {winner} had slightly better delivery and impact.
-
-Winner: {winner}
-{winner} wins this round with a more impressive overall performance.
-"""
+            feedback = f"Exception occurred while judging the round. Try again."
             return winner, feedback
 
     def _extract_winner(self, judgment: str, rapper1_name: str, rapper2_name: str) -> Tuple[str, str]:
