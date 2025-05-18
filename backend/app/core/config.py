@@ -9,24 +9,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # API Keys
     openai_api_key: str
     tavily_api_key: str
     langsmith_api_key: Optional[str] = None
-    
+
     # LangSmith Configuration
     langsmith_project: str = "ragerapps"
     langsmith_tracing_v2: bool = True
-    
+
     # Database Configuration
     qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
     qdrant_collection_name: str = "rap_styles"
-    
+
     # Application Settings
     debug: bool = False
     environment: str = "development"
-    
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
