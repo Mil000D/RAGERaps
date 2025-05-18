@@ -71,11 +71,11 @@ class BattleService:
 
                 # Generate verses for both rappers
                 try:
-                    # First rapper
+                    # First rapper with style1
                     verse1_content = await rapper_agent.generate_verse(
                         rapper_name=battle.rapper1_name,
                         opponent_name=battle.rapper2_name,
-                        style=battle.style,
+                        style=battle.style1,
                         round_number=battle.current_round,
                         previous_verses=previous_verses if previous_verses else None
                     )
@@ -86,7 +86,7 @@ Facing off with {battle.rapper2_name}, gonna win this fight.
 Round {battle.current_round}, and I'm bringing the heat,
 My rhymes are fire, can't be beat.
 
-This {battle.style} flow is what I do best,
+This {battle.style1} flow is what I do best,
 Put your skills to the ultimate test.
 When it comes to rap, I'm at the top,
 Watch me shine while your flow flops."""
@@ -100,11 +100,11 @@ Watch me shine while your flow flops."""
                 await battle_repository.add_verse(current_round.id, verse1)
 
                 try:
-                    # Second rapper
+                    # Second rapper with style2
                     verse2_content = await rapper_agent.generate_verse(
                         rapper_name=battle.rapper2_name,
                         opponent_name=battle.rapper1_name,
-                        style=battle.style,
+                        style=battle.style2,
                         round_number=battle.current_round,
                         previous_verses=previous_verses + [
                             {
@@ -118,7 +118,7 @@ Watch me shine while your flow flops."""
                     verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
 After this battle, nothing will be the same.
 {battle.rapper1_name} thinks they can step to me?
-But my {battle.style} skills are legendary.
+But my {battle.style2} skills are legendary.
 
 Round {battle.current_round}, I'm bringing my A-game,
 When I'm done, you'll remember my name.
@@ -144,13 +144,14 @@ This battle is mine, I'll win tonight."""
                 })
 
                 try:
-                    # Judge the round
+                    # Judge the round with both styles
                     winner, feedback = await judge_agent.judge_round(
                         rapper1_name=battle.rapper1_name,
                         rapper1_verse=verse1_content,
+                        rapper1_style=battle.style1,
                         rapper2_name=battle.rapper2_name,
                         rapper2_verse=verse2_content,
-                        style=battle.style
+                        rapper2_style=battle.style2
                     )
                 except Exception as e:
                     # If there's an error, use a default judgment
@@ -272,11 +273,14 @@ Winner: {winner}
                         "content": prev_round.rapper2_verse.content
                     })
 
-        # Generate the verse
+        # Determine which style to use based on the rapper
+        style = battle.style1 if rapper_name == battle.rapper1_name else battle.style2
+
+        # Generate the verse with biographical information about the opponent
         verse_content = await rapper_agent.generate_verse(
             rapper_name=rapper_name,
             opponent_name=opponent_name,
-            style=battle.style,
+            style=style,
             round_number=battle.current_round,
             previous_verses=previous_verses if previous_verses else None
         )
@@ -335,11 +339,11 @@ Winner: {winner}
 
             # Generate verses for both rappers
             try:
-                # First rapper
+                # First rapper with style1
                 verse1_content = await rapper_agent.generate_verse(
                     rapper_name=battle.rapper1_name,
                     opponent_name=battle.rapper2_name,
-                    style=battle.style,
+                    style=battle.style1,
                     round_number=battle.current_round,
                     previous_verses=None
                 )
@@ -350,7 +354,7 @@ Facing off with {battle.rapper2_name}, gonna win this fight.
 Round {battle.current_round}, and I'm bringing the heat,
 My rhymes are fire, can't be beat.
 
-This {battle.style} flow is what I do best,
+This {battle.style1} flow is what I do best,
 Put your skills to the ultimate test.
 When it comes to rap, I'm at the top,
 Watch me shine while your flow flops."""
@@ -364,11 +368,11 @@ Watch me shine while your flow flops."""
             await battle_repository.add_verse(current_round.id, verse1)
 
             try:
-                # Second rapper
+                # Second rapper with style2
                 verse2_content = await rapper_agent.generate_verse(
                     rapper_name=battle.rapper2_name,
                     opponent_name=battle.rapper1_name,
-                    style=battle.style,
+                    style=battle.style2,
                     round_number=battle.current_round,
                     previous_verses=[
                         {
@@ -382,7 +386,7 @@ Watch me shine while your flow flops."""
                 verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
 After this battle, nothing will be the same.
 {battle.rapper1_name} thinks they can step to me?
-But my {battle.style} skills are legendary.
+But my {battle.style2} skills are legendary.
 
 Round {battle.current_round}, I'm bringing my A-game,
 When I'm done, you'll remember my name.
@@ -554,9 +558,10 @@ This battle is mine, I'll win tonight."""
             winner, feedback = await judge_agent.judge_round(
                 rapper1_name=battle.rapper1_name,
                 rapper1_verse=current_round.rapper1_verse.content,
+                rapper1_style=battle.style1,
                 rapper2_name=battle.rapper2_name,
                 rapper2_verse=current_round.rapper2_verse.content,
-                style=battle.style
+                rapper2_style=battle.style2
             )
         except Exception as e:
             # If there's an error, use a default judgment
@@ -618,11 +623,11 @@ Winner: {winner}
 
                     # Generate verses for both rappers
                     try:
-                        # First rapper
+                        # First rapper with style1
                         verse1_content = await rapper_agent.generate_verse(
                             rapper_name=battle.rapper1_name,
                             opponent_name=battle.rapper2_name,
-                            style=battle.style,
+                            style=battle.style1,
                             round_number=new_round.round_number,
                             previous_verses=previous_verses if previous_verses else None
                         )
@@ -633,7 +638,7 @@ Facing off with {battle.rapper2_name}, gonna win this fight.
 Round {new_round.round_number}, and I'm bringing the heat,
 My rhymes are fire, can't be beat.
 
-This {battle.style} flow is what I do best,
+This {battle.style1} flow is what I do best,
 Put your skills to the ultimate test.
 When it comes to rap, I'm at the top,
 Watch me shine while your flow flops."""
@@ -653,11 +658,11 @@ Watch me shine while your flow flops."""
                     })
 
                     try:
-                        # Second rapper
+                        # Second rapper with style2
                         verse2_content = await rapper_agent.generate_verse(
                             rapper_name=battle.rapper2_name,
                             opponent_name=battle.rapper1_name,
-                            style=battle.style,
+                            style=battle.style2,
                             round_number=new_round.round_number,
                             previous_verses=previous_verses
                         )
@@ -666,7 +671,7 @@ Watch me shine while your flow flops."""
                         verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
 After this battle, nothing will be the same.
 {battle.rapper1_name} thinks they can step to me?
-But my {battle.style} skills are legendary.
+But my {battle.style2} skills are legendary.
 
 Round {new_round.round_number}, I'm bringing my A-game,
 When I'm done, you'll remember my name.

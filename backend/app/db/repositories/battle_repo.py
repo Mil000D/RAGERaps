@@ -30,7 +30,8 @@ class BattleRepository:
         battle = BattleDB(
             rapper1_name=battle_data.rapper1_name,
             rapper2_name=battle_data.rapper2_name,
-            style=battle_data.style
+            style1=battle_data.style1,
+            style2=battle_data.style2
         )
 
         self.battles[battle.id] = battle

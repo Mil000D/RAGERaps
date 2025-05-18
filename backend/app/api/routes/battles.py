@@ -29,14 +29,16 @@ async def generate_battle_with_verses(
         ...,
         examples=[
             {
-                "style": "Old School",
+                "style1": "Conscious Rap",
+                "style2": "Trap",
                 "rapper1_name": "Kendrick Lamar",
                 "rapper2_name": "Drake"
             },
             {
-                "style": "Trap",
-                "rapper1_name": "Future",
-                "rapper2_name": "Migos"
+                "style1": "Old School",
+                "style2": "Mumble Rap",
+                "rapper1_name": "Jay-Z",
+                "rapper2_name": "Future"
             }
         ]
     )
@@ -57,7 +59,8 @@ async def generate_battle_with_verses(
     - Send a request to the `/battles/{battle_id}/rounds/{round_id}/judge` endpoint to use AI judgment
     - Send a request to the `/battles/{battle_id}/rounds/{round_id}/user-judge` endpoint to manually select a winner
 
-    - **style**: The rap style for the battle (e.g., "Old School", "Trap")
+    - **style1**: The rap style for the first rapper (e.g., "Conscious Rap", "Old School")
+    - **style2**: The rap style for the second rapper (e.g., "Trap", "Mumble Rap")
     - **rapper1_name**: Name of the first rapper
     - **rapper2_name**: Name of the second rapper
 
@@ -106,7 +109,7 @@ async def get_battle(
     Get detailed information about a specific rap battle.
 
     Returns all information about the battle, including:
-    - Battle metadata (style, rappers, status)
+    - Battle metadata (styles for each rapper, rapper names, status)
     - All rounds and their status
     - All verses generated so far
     - Judgments for completed rounds
