@@ -2,33 +2,29 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-
-export interface Rapper {
-  id?: string;
-  name: string;
-  image?: string;
-  description?: string;
-}
+import { environment } from '../../environments/environment';
+import { Rapper } from '../models/rapper.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RapperService {
-  private apiUrl = '/api/rappers';
+  private apiUrl = `${environment.apiUrl}/rappers`;
   
   // Placeholder data for development
   private mockRappers: Rapper[] = [
-    { id: '1', name: 'MC Swift', image: 'assets/rappers/mc-swift.jpg', description: 'Known for lightning-fast rhymes and clever wordplay.' },
-    { id: '2', name: 'Lyric Master', image: 'assets/rappers/lyric-master.jpg', description: 'Legendary for complex rhyme schemes and deep messages.' },
-    { id: '3', name: 'Beat Professor', image: 'assets/rappers/beat-professor.jpg', description: 'Always in perfect rhythm with the beat.' },
-    { id: '4', name: 'Flow Queen', image: 'assets/rappers/flow-queen.jpg', description: 'Smooth delivery that never misses a beat.' },
-    { id: '5', name: 'Verbal Assassin', image: 'assets/rappers/verbal-assassin.jpg', description: 'Known for brutal diss tracks and fierce comebacks.' },
+    { id: '1', name: 'Kendrick Lamar', wins: 0 },
+    { id: '2', name: 'Drake', wins: 0 },
+    { id: '3', name: 'Jay-Z', wins: 0 },
+    { id: '4', name: 'Nicki Minaj', wins: 0 },
+    { id: '5', name: 'Eminem', wins: 0 },
   ];
 
   constructor(private http: HttpClient) { }
 
   getRappers(): Observable<Rapper[]> {
-    // Uncomment to use real API once it's ready
+    // For now, we'll use the mock data since we don't have a rappers endpoint
+    // When the backend has a rappers endpoint, we can use:
     // return this.http.get<Rapper[]>(this.apiUrl)
     //   .pipe(
     //     catchError(this.handleError<Rapper[]>('getRappers', []))
@@ -38,7 +34,8 @@ export class RapperService {
   }
 
   getRapper(id: string): Observable<Rapper | undefined> {
-    // Uncomment to use real API once it's ready
+    // For now, use mock data
+    // When the backend has a rappers endpoint, we can use:
     // const url = `${this.apiUrl}/${id}`;
     // return this.http.get<Rapper>(url)
     //   .pipe(
@@ -48,14 +45,23 @@ export class RapperService {
     return of(this.mockRappers.find(rapper => rapper.id === id));
   }
 
-  createRapper(rapper: Rapper): Observable<Rapper> {
-    // Uncomment to use real API once it's ready
-    // return this.http.post<Rapper>(this.apiUrl, rapper)
-    //   .pipe(
-    //     catchError(this.handleError<Rapper>('createRapper'))
-    //   );
+  getOrCreateRapper(name: string): Observable<Rapper> {
+    // Try to find the rapper by name first
+    const existingRapper = this.mockRappers.find(rapper => 
+      rapper.name.toLowerCase() === name.toLowerCase()
+    );
     
-    const newRapper = { ...rapper, id: Date.now().toString() };
+    if (existingRapper) {
+      return of(existingRapper);
+    }
+    
+    // If not found, create a new rapper
+    const newRapper = { 
+      id: `custom-${Date.now()}`,
+      name, 
+      wins: 0
+    };
+    
     this.mockRappers.push(newRapper);
     return of(newRapper);
   }

@@ -1,86 +1,117 @@
-<section class="battle-arena">
+<section class="battle-arena" *ngIf="battle">
   <div class="container arena-container">
     <header class="arena-header">
       <h2 class="arena-title">RAGE<span class="title-highlight">Raps</span> Battle Arena</h2>
     </header>
     
-    <div *ngIf="battle">
-      <div class="versus-display">
-        <div class="rapper-info">
-          <div class="rapper-initial">{{ getInitial(battle.config.rapper1.name) }}</div>
-          <h3 class="rapper-name">{{ battle.config.rapper1.name }}</h3>
+    <div class="battle-header">
+      <h1>{{ battle.rapper1.name }} vs {{ battle.rapper2.name }}</h1>
+      <div class="battle-meta">
+        <span class="battle-style">{{ battle.style }} Style</span>
+        <span class="battle-status" [class.completed]="battle.status === 'completed'">
+          {{ battle.status === 'completed' ? 'Completed' : 'In Progress' }}
+        </span>
+      </div>
+      
+      <div class="battle-score">
+        <div class="rapper" [class.winner]="battle.winner === battle.rapper1.name">
+          <div class="rapper-initial">{{ getInitial(battle.rapper1.name) }}</div>
+          <h3 class="rapper-name">{{ battle.rapper1.name }}</h3>
+          <div class="wins">{{ battle.rapper1.wins }}</div>
         </div>
-        
-        <div class="versus-circle">VS</div>
-        
-        <div class="rapper-info">
-          <div class="rapper-initial">{{ getInitial(battle.config.rapper2.name) }}</div>
-          <h3 class="rapper-name">{{ battle.config.rapper2.name }}</h3>
+        <div class="vs">VS</div>
+        <div class="rapper" [class.winner]="battle.winner === battle.rapper2.name">
+          <div class="rapper-initial">{{ getInitial(battle.rapper2.name) }}</div>
+          <h3 class="rapper-name">{{ battle.rapper2.name }}</h3>
+          <div class="wins">{{ battle.rapper2.wins }}</div>
         </div>
       </div>
       
-      <div class="battle-info">
-        <div class="info-item">
-          <span class="info-label">Rounds:</span>
-          <span>{{ battle.config.rounds }}</span>
+      <div *ngIf="battle.winner" class="winner-announcement">
+        Winner: {{ battle.winner }}
+      </div>
+    </div>
+    
+    <div class="battle-rounds">
+      <div *ngFor="let round of battle.rounds; let i = index" class="round">
+        <h2>Round {{ i + 1 }}</h2>
+        
+        <div class="verses">
+          <div class="verse" *ngFor="let verse of round.verses">
+            <h3>{{ verse.rapper_name }}</h3>
+            <pre>{{ verse.content }}</pre>
+          </div>
         </div>
         
-        <div class="info-item" *ngIf="battle.config.topic">
-          <span class="info-label">Topic:</span>
-          <span>{{ battle.config.topic }}</span>
+        <div class="judgment" *ngIf="round.judgment">
+          <h3>Judgment</h3>
+          <div class="judgment-content">
+            <div class="judgment-winner">
+              Winner: <strong>{{ round.judgment.winner }}</strong>
+            </div>
+            <div class="judgment-feedback">
+              {{ round.judgment.feedback }}
+            </div>
+            <div class="judgment-meta">
+              <small>{{ round.judgment.is_ai_judgment ? 'AI Judgment' : 'User Judgment' }}</small>
+            </div>
+          </div>
         </div>
         
-        <div class="info-item" *ngIf="battle.config.style">
-          <span class="info-label">Style:</span>
-          <span>{{ battle.config.style }}</span>
+        <!-- Judgment options for incomplete rounds -->
+        <div class="judge-actions" *ngIf="round.verses.length === 2 && !round.judgment && battle.status === 'in_progress'">
+          <h3>Judge This Round</h3>
+          <div class="judge-options">
+            <button class="ai-judge-btn" 
+                    (click)="judgeRoundWithAI(battle.id!, round.id!)" 
+                    [disabled]="loading">
+              {{ loading ? 'Judging...' : 'Let AI Judge' }}
+            </button>
+            
+            <div class="or-divider">OR</div>
+            
+            <div class="user-judge">
+              <form [formGroup]="judgmentForm" (ngSubmit)="judgeRoundByUser(battle.id!, round.id!)">
+                <div class="form-group">
+                  <label>Pick Winner</label>
+                  <div class="radio-group">
+                    <div class="radio-option">
+                      <input type="radio" [id]="'rapper1-' + i" formControlName="winner" [value]="battle.rapper1.name">
+                      <label [for]="'rapper1-' + i">{{ battle.rapper1.name }}</label>
+                    </div>
+                    <div class="radio-option">
+                      <input type="radio" [id]="'rapper2-' + i" formControlName="winner" [value]="battle.rapper2.name">
+                      <label [for]="'rapper2-' + i">{{ battle.rapper2.name }}</label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="feedback">Your Feedback</label>
+                  <textarea id="feedback" formControlName="feedback" placeholder="Why did you choose this winner?"></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" [disabled]="judgmentForm.invalid || loading">
+                  Submit Your Judgment
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div *ngIf="generating" class="generating-container">
-        <p class="generating-text">Generating verses for Round {{ currentRound }}...</p>
-      </div>
-      
-      <div *ngIf="!generating && !battleComplete">
-        <div *ngFor="let round of battle.rounds; let i = index">
-          <app-battle-display 
-            [round]="round" 
-            [roundNumber]="i + 1" 
-            [totalRounds]="battle.config.rounds">
-          </app-battle-display>
-        </div>
-        
-        <div class="text-center mt-4" *ngIf="currentRound < battle.config.rounds">
-          <button class="next-round-btn" (click)="startNextRound()">
-            Next Round
-          </button>
-        </div>
-      </div>
-      
-      <div *ngIf="loading" class="loading-container">
-        <p class="loading-text">Calculating final results...</p>
-      </div>
-      
-      <div *ngIf="battleComplete && battleResult" class="battle-result">
-        <h3 class="result-title">Battle Winner</h3>
-        <p class="winner-name">{{ battleResult.winner.name }}</p>
-        
-        <div class="result-score">
-          <p>{{ battle.config.rapper1.name }}: 
-            <span class="score-value" [ngClass]="{'winner-score': battleResult.winner.id === battle.config.rapper1.id, 'loser-score': battleResult.winner.id !== battle.config.rapper1.id}">
-              {{ battleResult.scores.rapper1Score }}
-            </span>
-          </p>
-          <p>{{ battle.config.rapper2.name }}: 
-            <span class="score-value" [ngClass]="{'winner-score': battleResult.winner.id === battle.config.rapper2.id, 'loser-score': battleResult.winner.id !== battle.config.rapper2.id}">
-              {{ battleResult.scores.rapper2Score }}
-            </span>
-          </p>
-        </div>
-        
-        <button class="new-battle-btn" (click)="configureNewBattle()">
-          New Battle
-        </button>
-      </div>
+    </div>
+    
+    <div class="battle-actions">
+      <button class="back-btn" (click)="backToList()">Back to Battles</button>
     </div>
   </div>
 </section>
+
+<div *ngIf="!battle && !error" class="loading">
+  Loading battle...
+</div>
+
+<div *ngIf="error" class="error">
+  {{ error }}
+  <button class="back-btn" (click)="backToList()">Back to Battles</button>
+</div>

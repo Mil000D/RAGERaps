@@ -30,8 +30,6 @@ else:
 # Create the MCP server
 mcp = FastMCP("RAGERaps Search Tools", port=8888)
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 # Initialize Wikipedia tool
 wikipedia_wrapper = WikipediaAPIWrapper(
     top_k_results=5,

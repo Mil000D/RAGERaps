@@ -4,27 +4,9 @@
   padding: 20px;
 }
 
-.arena-container {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  padding: 2rem;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
 .battle-header {
   margin-bottom: 30px;
   text-align: center;
-}
-
-.arena-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--light-gray);
 }
 
 .battle-meta {
@@ -42,13 +24,6 @@
 
 .completed {
   color: #4caf50;
-}
-
-.versus-display {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
 }
 
 .battle-score {
@@ -287,100 +262,24 @@ textarea {
   background-color: #555;
 }
 
-.loading-container, .generating-container {
+.loading, .error {
   text-align: center;
-  padding: 2rem 0;
-}
-
-.loading-text, .generating-text {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  animation: pulse 1.5s infinite;
-}
-
-.next-round-btn {
-  background-color: var(--accent-color);
-  color: var(--light-text);
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.next-round-btn:hover {
-  background-color: #e07415;
-}
-
-.battle-result {
-  text-align: center;
-  padding: 2rem;
-  margin-top: 2rem;
-  background-color: #f8f8f8;
+  padding: 50px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #252525;
   border-radius: 8px;
 }
 
-.result-title {
-  font-size: 2rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
+.error {
+  color: #f44336;
 }
 
-.winner-name {
-  font-size: 2.5rem;
-  color: var(--winner-color);
-  margin-bottom: 2rem;
-}
-
-.result-score {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-}
-
-.score-value {
-  font-weight: 700;
-  font-size: 1.5rem;
-}
-
-.winner-score {
-  color: var(--winner-color);
-}
-
-.loser-score {
-  color: var(--loser-color);
-}
-
-.new-battle-btn {
-  background-color: var(--primary-color);
-  color: var(--light-text);
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.new-battle-btn:hover {
-  background-color: #5e3ba1;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+.error .back-btn {
+  margin-top: 20px;
 }
 
 @media (max-width: 768px) {
-  .versus-display {
-    flex-direction: column;
-  }
-  
-  .versus-circle {
-    margin: 1rem 0;
-  }
-
   .radio-group {
     flex-direction: column;
     gap: 10px;

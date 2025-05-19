@@ -36,7 +36,7 @@ export class BattleArenaComponent implements OnInit {
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.battleId = params['id'];
-        this.loadBattle(params['id']);
+        this.loadBattle(this.battleId);
       } else {
         this.router.navigate(['/battle']);
       }
@@ -103,6 +103,7 @@ export class BattleArenaComponent implements OnInit {
     this.router.navigate(['/battle']);
   }
   
+  // Helper method for UI
   getInitial(name: string): string {
     return name ? name.charAt(0).toUpperCase() : '';
   }

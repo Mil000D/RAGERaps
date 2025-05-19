@@ -1,171 +1,84 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { Rapper } from './rapper.service';
-
-export interface BattleConfig {
-  rapper1: Rapper;
-  rapper2: Rapper;
-  rounds: number;
-  topic?: string;
-  style?: string;
-}
-
-export interface Verse {
-  text: string;
-  rapper: Rapper;
-  round: number;
-}
-
-export interface Round {
-  number: number;
-  verse1: Verse;
-  verse2: Verse;
-  winner?: Rapper;
-}
-
-export interface BattleResult {
-  winner: Rapper;
-  rounds: Round[];
-  scores: {
-    rapper1Score: number;
-    rapper2Score: number;
-  };
-}
-
-export interface Battle {
-  id?: string;
-  config: BattleConfig;
-  rounds: Round[];
-  completed: boolean;
-  result?: BattleResult;
-  createdAt: Date;
-}
+import { Injectable } from '@angular/core';
+import { Observable, catchError, of, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Battle, BattleCreate, JudgmentCreate } from '../models/battle.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BattleService {
-  private apiUrl = '/api/battles';
-  private currentBattle: Battle | null = null;
+  private apiUrl = `${environment.apiUrl}/battles`;
 
   constructor(private http: HttpClient) { }
 
-  createBattle(config: BattleConfig): Observable<Battle> {
-    // Uncomment to use real API once it's ready
-    // return this.http.post<Battle>(this.apiUrl, config)
-    //   .pipe(
-    //     catchError(this.handleError<Battle>('createBattle'))
-    //   );
-    
-    // Mock battle creation
-    const battle: Battle = {
-      id: Date.now().toString(),
-      config: config,
-      rounds: [],
-      completed: false,
-      createdAt: new Date()
-    };
-    this.currentBattle = battle;
-    return of(battle);
+  /**
+   * Get all battles
+   */
+  getBattles(): Observable<Battle[]> {
+    console.log('Fetching all battles from API');
+    return this.http.get<Battle[]>(this.apiUrl).pipe(
+      tap(battles => console.log('Fetched battles', battles)),
+      catchError(this.handleError<Battle[]>('getBattles', []))
+    );
   }
 
-  getCurrentBattle(): Battle | null {
-    return this.currentBattle;
+  /**
+   * Get a single battle by ID
+   */
+  getBattle(id: string): Observable<Battle> {
+    console.log(`Fetching battle with ID ${id} from API`);
+    return this.http.get<Battle>(`${this.apiUrl}/${id}`).pipe(
+      tap(battle => console.log('Fetched battle', battle)),
+      catchError(this.handleError<Battle>(`getBattle id=${id}`))
+    );
   }
 
-  generateVerse(rapper: Rapper, roundNumber: number, previousVerses?: Verse[]): Observable<Verse> {
-    // Uncomment to use real API once it's ready
-    // const url = `${this.apiUrl}/verse`;
-    // return this.http.post<Verse>(url, { rapper, roundNumber, previousVerses })
-    //   .pipe(
-    //     catchError(this.handleError<Verse>('generateVerse'))
-    //   );
-    
-    // Mock verse generation
-    const mockVerses = [
-      "I step to the mic with precision and grace,\nDropping rhymes so hot they're all over the place.\nMy flow is smooth, my beats are tight,\nI'll leave you speechless all through the night.",
-      "You think you're good? You ain't seen nothing yet,\nMy lyrics hit harder than your biggest regret.\nI'm the king of this battle, the best of the best,\nAfter I'm done with you, you'll need a long rest.",
-      "Your rhymes are weak, your flow is bland,\nTime to step aside and let the master take command.\nI spit fire that burns up the track,\nOnce I start flowing, there's no turning back."
-    ];
-    
-    const verse: Verse = {
-      text: mockVerses[Math.floor(Math.random() * mockVerses.length)],
-      rapper: rapper,
-      round: roundNumber
-    };
-    
-    return of(verse);
+  /**
+   * Generate a new battle with verses for both rappers
+   */
+  generateBattleWithVerses(battleData: BattleCreate): Observable<Battle> {
+    console.log('Creating new battle with verses', battleData);
+    return this.http.post<Battle>(`${this.apiUrl}/with-verses`, battleData).pipe(
+      tap(battle => console.log('Created new battle', battle)),
+      catchError(this.handleError<Battle>('generateBattleWithVerses'))
+    );
   }
 
-  judgeRound(verse1: Verse, verse2: Verse): Observable<Round> {
-    // Uncomment to use real API once it's ready
-    // const url = `${this.apiUrl}/judge`;
-    // return this.http.post<Round>(url, { verse1, verse2 })
-    //   .pipe(
-    //     catchError(this.handleError<Round>('judgeRound'))
-    //   );
-    
-    // Mock judging
-    const round: Round = {
-      number: verse1.round,
-      verse1: verse1,
-      verse2: verse2,
-      winner: Math.random() > 0.5 ? verse1.rapper : verse2.rapper
-    };
-    
-    if (this.currentBattle) {
-      this.currentBattle.rounds.push(round);
-    }
-    
-    return of(round);
+  /**
+   * Judge a round using AI
+   */
+  judgeRoundWithAI(battleId: string, roundId: string): Observable<Battle> {
+    console.log(`AI judging round ${roundId} in battle ${battleId}`);
+    return this.http.post<Battle>(`${this.apiUrl}/${battleId}/rounds/${roundId}/judge`, {}).pipe(
+      tap(battle => console.log('AI judged round', battle)),
+      catchError(this.handleError<Battle>('judgeRoundWithAI'))
+    );
   }
 
-  completeBattle(): Observable<BattleResult> {
-    if (!this.currentBattle) {
-      throw new Error('No active battle to complete');
-    }
-    
-    // Uncomment to use real API once it's ready
-    // const url = `${this.apiUrl}/${this.currentBattle.id}/complete`;
-    // return this.http.post<BattleResult>(url, {})
-    //   .pipe(
-    //     catchError(this.handleError<BattleResult>('completeBattle'))
-    //   );
-    
-    // Mock battle completion
-    let rapper1Score = 0;
-    let rapper2Score = 0;
-    
-    this.currentBattle.rounds.forEach(round => {
-      if (round.winner?.id === this.currentBattle?.config.rapper1.id) {
-        rapper1Score++;
-      } else if (round.winner?.id === this.currentBattle?.config.rapper2.id) {
-        rapper2Score++;
-      }
-    });
-    
-    const result: BattleResult = {
-      winner: rapper1Score > rapper2Score 
-        ? this.currentBattle.config.rapper1 
-        : this.currentBattle.config.rapper2,
-      rounds: this.currentBattle.rounds,
-      scores: {
-        rapper1Score,
-        rapper2Score
-      }
-    };
-    
-    this.currentBattle.completed = true;
-    this.currentBattle.result = result;
-    
-    return of(result);
+  /**
+   * Judge a round manually by user
+   */
+  judgeRoundByUser(battleId: string, roundId: string, judgment: JudgmentCreate): Observable<Battle> {
+    console.log(`User judging round ${roundId} in battle ${battleId}`, judgment);
+    return this.http.post<Battle>(`${this.apiUrl}/${battleId}/rounds/${roundId}/user-judge`, judgment).pipe(
+      tap(battle => console.log('User judged round', battle)),
+      catchError(this.handleError<Battle>('judgeRoundByUser'))
+    );
   }
 
+  /**
+   * Handle HTTP operation that failed.
+   * Let the app continue.
+   * @param operation - name of the operation that failed
+   * @param result - optional value to return as the observable result
+   */
   private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
-      console.error(`${operation} failed: ${error.message}`);
+      console.error(`${operation} failed:`, error);
+      console.error(`${operation} error message:`, error.message);
+      
+      // Let the app keep running by returning an empty result
       return of(result as T);
     };
   }
