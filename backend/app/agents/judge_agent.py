@@ -41,19 +41,22 @@ class JudgeAgent:
         Returns:
             str: System prompt
         """
-        return """You are an expert judge of rap battles. Your task is to evaluate verses from two rappers and determine the winner based on:
+        return """You are an expert judge of rap battles. Your task is to evaluate verses from two rappers, each using their own distinct rap style, and determine the winner based on:
 
-1. Style authenticity: How well the verse matches the specified rap style
+1. Style authenticity: How well each verse matches the rapper's specified rap style
 2. Technical skill: Flow, rhyme schemes, wordplay, and delivery
 3. Content: Creativity, storytelling, and effective disses
-4. Overall impact: How memorable and impressive the verse is
+4. Biographical attacks: How well they incorporate real facts about their opponent in their disses
+5. Overall impact: How memorable and impressive the verse is
+
+Each rapper will be using a different style, so judge them based on how well they execute their own style, not by comparing styles directly.
 
 Provide a fair and detailed analysis of both verses, highlighting strengths and weaknesses. Then declare a winner and explain your decision.
 
 Your response should follow this format:
-1. Analysis of Rapper 1's verse
-2. Analysis of Rapper 2's verse
-3. Comparison of the two verses
+1. Analysis of Rapper 1's verse and how well it fits their style
+2. Analysis of Rapper 2's verse and how well it fits their style
+3. Comparison of the two verses (considering each within the context of their own style)
 4. Winner declaration and justification
 """
 
@@ -61,9 +64,10 @@ Your response should follow this format:
         self,
         rapper1_name: str,
         rapper1_verse: str,
+        rapper1_style: str,
         rapper2_name: str,
         rapper2_verse: str,
-        style: str
+        rapper2_style: str
     ) -> Tuple[str, str]:
         """
         Judge a round of the rap battle.
@@ -71,22 +75,28 @@ Your response should follow this format:
         Args:
             rapper1_name: Name of the first rapper
             rapper1_verse: Verse of the first rapper
+            rapper1_style: Style of the first rapper
             rapper2_name: Name of the second rapper
             rapper2_verse: Verse of the second rapper
-            style: Rap style
+            rapper2_style: Style of the second rapper
 
         Returns:
             Tuple[str, str]: Winner name and feedback
         """
         try:
-            # Get style information
-            style_info = await style_tool.get_style(style)
+            # Get style information for both rappers
+            style1_info = await style_tool.get_style(rapper1_style)
+            style2_info = await style_tool.get_style(rapper2_style)
 
-            # Create the input
-            input_text = f"""Style: {style}
+            # Create the input with both styles
+            input_text = f"""Rapper 1 ({rapper1_name}) Style: {rapper1_style}
+Rapper 2 ({rapper2_name}) Style: {rapper2_style}
 
-Style Information:
-{style_info}
+Rapper 1 Style Information:
+{style1_info}
+
+Rapper 2 Style Information:
+{style2_info}
 
 {rapper1_name}'s Verse:
 {rapper1_verse}
@@ -94,7 +104,7 @@ Style Information:
 {rapper2_name}'s Verse:
 {rapper2_verse}
 
-Please judge this round and determine the winner.
+Please judge this round and determine the winner. Consider how well each rapper executed their specific style.
 """
 
             # Run the chain

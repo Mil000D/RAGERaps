@@ -227,6 +227,7 @@ class RapperAgent:
         Returns:
             SystemMessage: The created system message
         """
+        # Create system content with biographical attack instructions as a standard feature
         system_content = f"""You are {rapper_name}, a skilled rapper in a rap battle against {opponent_name}.
 Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
 
@@ -238,9 +239,16 @@ Follow these guidelines:
    - search for general web searches
 2. Research the {style} rap style using the style tools (get_style, search_styles)
 3. Create a verse that incorporates elements of {style} and {rapper_name}'s persona
-4. Make references to real facts about {rapper_name} and diss {opponent_name}
-5. Keep the verse between 8-16 lines
-6. Be creative, authentic, and true to the style
+4. IMPORTANT: Research {opponent_name}'s biography, career, and personal life using search tools.
+5. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career mistakes, controversies, or personal details.
+6. Reference at least 2-3 specific biographical details about {opponent_name} in your disses.
+7. Make your disses clever, creative, and authentic to {style} rap style.
+8. Keep the verse between 12-16 lines to allow room for detailed disses.
+"""
+
+        # Add common ending
+        system_content += """
+Remember to stay in character throughout the verse and make it sound authentic to the style.
 """
 
         # Add context about previous verses if available
