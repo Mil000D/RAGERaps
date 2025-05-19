@@ -18,9 +18,15 @@ def utc_now():
 class BattleBase(BaseModel):
     """Base model for battle data."""
 
-    style: str = Field(
+    style1: str = Field(
         ...,
-        description="The rap battle style",
+        description="The rap style for the first rapper",
+        examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"]
+    )
+
+    style2: str = Field(
+        ...,
+        description="The rap style for the second rapper",
         examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"]
     )
 
@@ -46,7 +52,8 @@ class BattleCreate(BattleBase):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "style": "Old School",
+                "style1": "Conscious Rap",
+                "style2": "Trap",
                 "rapper1_name": "Kendrick Lamar",
                 "rapper2_name": "Drake"
             }
@@ -128,7 +135,8 @@ class BattleResponse(BattleDB):
         "json_schema_extra": {
             "example": {
                 "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "style": "Old School",
+                "style1": "Conscious Rap",
+                "style2": "Trap",
                 "rapper1_name": "Kendrick Lamar",
                 "rapper2_name": "Drake",
                 "rounds": [],

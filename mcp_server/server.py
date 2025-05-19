@@ -86,7 +86,7 @@ async def search_rapper_wikipedia(rapper_name: str) -> str:
 
 # Initialize Tavily search tool
 tavily_search = TavilySearch(
-    max_results=5,
+    max_results=3,  # Reduced from 5 to 3 to limit results
     topic="general",
     include_raw_content=True,
     include_domains=None,
@@ -111,7 +111,16 @@ async def search_internet(query: str) -> str:
         if not result:
             return f"No information found for: {query}"
 
-        return result
+        # Process the result to limit token count
+        # Convert to string if it's not already
+        result_str = str(result)
+
+        # Limit the result to approximately 8000 tokens (roughly 32000 characters)
+        max_chars = 10000
+        if len(result_str) > max_chars:
+            result_str = result_str[:max_chars] + "... [Content truncated due to length]"
+
+        return result_str
     except Exception as e:
         return f"Error searching the internet: {str(e)}"
 
@@ -136,7 +145,16 @@ async def search_rapper_info(rapper_name: str) -> str:
         if not result:
             return f"No information found for rapper: {rapper_name}"
 
-        return result
+        # Process the result to limit token count
+        # Convert to string if it's not already
+        result_str = str(result)
+
+        # Limit the result to approximately 8000 tokens (roughly 32000 characters)
+        max_chars = 10000
+        if len(result_str) > max_chars:
+            result_str = result_str[:max_chars] + "... [Content truncated due to length]"
+
+        return result_str
     except Exception as e:
         return f"Error searching for rapper information: {str(e)}"
 
