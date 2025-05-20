@@ -2,11 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { RapperService } from '../../services/rapper.service';
 import { BattleService } from '../../services/battle.service';
 import { BattleCreate } from '../../models/battle.model';
 import { BattleConfig } from '../../models/battle-config.model';
-import { Rapper } from '../../models/rapper.model';
 
 @Component({
   selector: 'app-battle-config',
@@ -20,6 +18,8 @@ export class BattleConfigComponent implements OnInit {
   rapper1Style: string = '';
   rapper2Name: string = '';
   rapper2Style: string = '';
+  loading: boolean = false;
+  errorMessage: string = '';
   
   config: BattleConfig = {
     rapper1: { name: '' },
@@ -28,7 +28,7 @@ export class BattleConfigComponent implements OnInit {
     topic: '',
     style: ''
   };
-  
+
   topics: string[] = [
     'Money & Success',
     'Street Life',
@@ -40,17 +40,16 @@ export class BattleConfigComponent implements OnInit {
     'Party Life',
     'Legacy & Fame'
   ];
-  
+
   constructor(
-    private rapperService: RapperService,
     private battleService: BattleService,
     private router: Router
   ) {}
-  
+
   ngOnInit(): void {
     // No need to load rappers anymore
   }
-  
+
   startBattle(): void {
     if (!this.isValidConfig()) {
       return;
@@ -58,39 +57,40 @@ export class BattleConfigComponent implements OnInit {
     
     // Create a BattleCreate object for the API
     const battleCreate: BattleCreate = {
-      style: this.determineStyle(),
+      style1: this.rapper1Style || 'Freestyle',
+      style2: this.rapper2Style || 'Freestyle',
       rapper1_name: this.rapper1Name,
       rapper2_name: this.rapper2Name
     };
     
+    // Show loading state
+    this.loading = true;
+    this.errorMessage = '';
+    
     // Use our updated battle service to create the battle with verses
     this.battleService.generateBattleWithVerses(battleCreate)
-      .subscribe(battle => {
-        if (battle) {
-          this.router.navigate(['/battle/arena', battle.id]);
-        } else {
-          console.error("Failed to create battle");
+      .subscribe({
+        next: (battle) => {
+          this.loading = false;
+          if (battle && battle.id) {
+            this.router.navigate(['/battle/arena', battle.id]);
+          } else {
+            console.error("Failed to create battle");
+            this.errorMessage = "Failed to create battle. Please try again.";
+          }
+        },
+        error: (err) => {
+          this.loading = false;
+          console.error("Error creating battle:", err);
+          this.errorMessage = "An error occurred while creating the battle. Please try again.";
         }
       });
   }
-  
-  // Helper method to determine the combined style
-  private determineStyle(): string {
-    if (this.rapper1Style && this.rapper2Style) {
-      return `${this.rapper1Style} vs ${this.rapper2Style}`;
-    } else if (this.rapper1Style) {
-      return this.rapper1Style;
-    } else if (this.rapper2Style) {
-      return this.rapper2Style;
-    } else {
-      return 'Freestyle'; // Default style
-    }
-  }
-  
+
   isValidConfig(): boolean {
     return (
-      !!this.rapper1Name && 
-      !!this.rapper2Name && 
+      !!this.rapper1Name &&
+      !!this.rapper2Name &&
       this.rapper1Name !== this.rapper2Name &&
       this.config.rounds > 0 &&
       this.config.rounds <= 5

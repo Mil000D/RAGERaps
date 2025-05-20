@@ -8,7 +8,7 @@ import { Battle, BattleCreate, JudgmentCreate } from '../models/battle.model';
   providedIn: 'root'
 })
 export class BattleService {
-  private apiUrl = `${environment.apiUrl}/battles`;
+  private apiUrl = `${environment.apiUrl}/api/battles`;
 
   constructor(private http: HttpClient) { }
 
@@ -39,7 +39,14 @@ export class BattleService {
    */
   generateBattleWithVerses(battleData: BattleCreate): Observable<Battle> {
     console.log('Creating new battle with verses', battleData);
-    return this.http.post<Battle>(`${this.apiUrl}/with-verses`, battleData).pipe(
+    const payload = {
+      style1: battleData.style1 || 'Freestyle',
+      style2: battleData.style2 || 'Freestyle',
+      rapper1_name: battleData.rapper1_name,
+      rapper2_name: battleData.rapper2_name
+    };
+
+    return this.http.post<Battle>(`${this.apiUrl}/with-verses`, payload).pipe(
       tap(battle => console.log('Created new battle', battle)),
       catchError(this.handleError<Battle>('generateBattleWithVerses'))
     );
@@ -77,9 +84,10 @@ export class BattleService {
     return (error: any): Observable<T> => {
       console.error(`${operation} failed:`, error);
       console.error(`${operation} error message:`, error.message);
-      
+
       // Let the app keep running by returning an empty result
       return of(result as T);
     };
   }
 }
+

@@ -10,9 +10,12 @@ export interface BattleConfig {
 
 export interface Verse {
   id?: string;
+  round_id?: string;
   content: string;
   rapper_name: string;
   created_at?: string;
+  updated_at?: string;
+  sources?: any[];
 }
 
 export interface Judgment {
@@ -25,25 +28,37 @@ export interface Judgment {
 
 export interface Round {
   id?: string;
-  verses: Verse[];
-  judgment?: Judgment;
+  battle_id?: string;
+  rapper1_verse?: Verse;
+  rapper2_verse?: Verse;
+  user_judgment?: Judgment | null;
+  judge_feedback?: string | null;
+  winner?: string | null;
+  round_number: number;
+  status: 'completed' | 'in_progress';
   created_at?: string;
-  completed: boolean;
+  updated_at?: string;
 }
 
 export interface Battle {
   id?: string;
-  style: string;
-  rapper1: Rapper;
-  rapper2: Rapper;
+  style1: string;
+  style2: string;
+  rapper1_name: string;
+  rapper2_name: string;
   status: 'in_progress' | 'completed';
-  winner?: string;
+  winner?: string | null;
   rounds: Round[];
   created_at?: string;
+  updated_at?: string;
+  current_round?: number;
+  rapper1_wins?: number;
+  rapper2_wins?: number;
 }
 
 export interface BattleCreate {
-  style: string;
+  style1: string;
+  style2: string;
   rapper1_name: string;
   rapper2_name: string;
 }

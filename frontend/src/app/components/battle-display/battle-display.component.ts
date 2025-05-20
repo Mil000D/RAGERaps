@@ -1,7 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Round, Verse } from '../../services/battle.service';
-import { Rapper } from '../../services/rapper.service';
+import { Round, Verse } from '../../models/battle.model';
 
 @Component({
   selector: 'app-battle-display',
@@ -29,9 +28,9 @@ export class BattleDisplayComponent implements OnInit {
     }, 3000);
   }
   
-  getWinnerClass(rapper: Rapper): string {
+  getWinnerClass(rapperName: string): string {
     if (!this.judgeResult) return '';
-    return this.round.winner?.id === rapper.id ? 'winner' : 'loser';
+    return this.round.winner === rapperName ? 'winner' : 'loser';
   }
   
   getInitial(name: string): string {

@@ -32,8 +32,12 @@
       </div>
     </div>
     
-    <button class="start-battle-btn" [disabled]="!isValidConfig()" (click)="startBattle()">
-      START BATTLE
+    <button class="start-battle-btn" [disabled]="!isValidConfig() || loading" (click)="startBattle()">
+      {{ loading ? 'CREATING BATTLE...' : 'START BATTLE' }}
     </button>
+    
+    <div class="error-message" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
   </div>
 </section>
