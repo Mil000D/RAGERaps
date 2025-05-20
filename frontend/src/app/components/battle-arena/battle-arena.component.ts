@@ -34,7 +34,7 @@ export class BattleArenaComponent implements OnInit {
   }
   
   ngOnInit(): void {
-    // Get battle ID from route params
+    
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.battleId = params['id'];
@@ -51,7 +51,7 @@ export class BattleArenaComponent implements OnInit {
       next: (battle) => {
         this.battle = battle;
         this.loading = false;
-        // Update win counts from the backend
+        
         this.rapper1Wins = battle.rapper1_wins || 0;
         this.rapper2Wins = battle.rapper2_wins || 0;
       },
@@ -71,7 +71,7 @@ export class BattleArenaComponent implements OnInit {
       next: (updatedBattle) => {
         this.battle = updatedBattle;
         this.loading = false;
-        // Update win counts from the backend
+        
         this.rapper1Wins = updatedBattle.rapper1_wins || 0;
         this.rapper2Wins = updatedBattle.rapper2_wins || 0;
       },
@@ -97,7 +97,7 @@ export class BattleArenaComponent implements OnInit {
       next: (updatedBattle) => {
         this.battle = updatedBattle;
         this.loading = false;
-        // Update win counts from the backend
+        
         this.rapper1Wins = updatedBattle.rapper1_wins || 0;
         this.rapper2Wins = updatedBattle.rapper2_wins || 0;
         this.judgmentForm.reset();

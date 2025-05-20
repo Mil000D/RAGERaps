@@ -114,7 +114,7 @@
   font-weight: 700;
 }
 
-/* Animation classes */
+
 .winner {
   border: 3px solid var(--winner-color);
   transform: scale(1.03);

@@ -47,7 +47,7 @@ export class BattleConfigComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // No need to load rappers anymore
+    
   }
 
   startBattle(): void {
@@ -55,7 +55,7 @@ export class BattleConfigComponent implements OnInit {
       return;
     }
     
-    // Create a BattleCreate object for the API
+    
     const battleCreate: BattleCreate = {
       style1: this.rapper1Style || 'Freestyle',
       style2: this.rapper2Style || 'Freestyle',
@@ -63,11 +63,11 @@ export class BattleConfigComponent implements OnInit {
       rapper2_name: this.rapper2Name
     };
     
-    // Show loading state
+    
     this.loading = true;
     this.errorMessage = '';
     
-    // Use our updated battle service to create the battle with verses
+    
     this.battleService.generateBattleWithVerses(battleCreate)
       .subscribe({
         next: (battle) => {

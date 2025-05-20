@@ -18,7 +18,7 @@ export class BattleDisplayComponent implements OnInit {
   judgeResult = false;
   
   ngOnInit(): void {
-    // Initial animation delay
+    
   }
   
   startJudging(): void {
