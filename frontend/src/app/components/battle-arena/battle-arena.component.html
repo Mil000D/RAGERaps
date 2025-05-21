@@ -5,7 +5,7 @@
     </header>
     
     <div class="battle-header">
-      <h1>{{ battle.rapper1_name }} vs {{ battle.rapper2_name }}</h1>
+      <h1>{{ battle.rapper1_name }} <span class="vs">vs</span> {{ battle.rapper2_name }}</h1>
       <div class="battle-meta">
         <span class="battle-style">{{ battle.style1 }} vs {{ battle.style2 }}</span>
         <span class="battle-status" [class.completed]="battle.status === 'completed'">
@@ -61,9 +61,6 @@
             <div class="judgment-winner">
               Winner: <strong>{{ round.user_judgment.winner }}</strong>
             </div>
-            <div class="judgment-feedback">
-              {{ round.user_judgment.feedback }}
-            </div>
           </div>
         </div>
         
@@ -86,6 +83,7 @@
             <button class="ai-judge-btn" 
                     (click)="judgeRoundWithAI(battle.id!, round.id!)" 
                     [disabled]="loading">
+              <span *ngIf="loading" class="loading-spinner" style="width:16px;height:16px;margin-right:8px;"></span>
               {{ loading ? 'Judging...' : 'Let AI Judge' }}
             </button>
             
@@ -98,21 +96,25 @@
                   <div class="radio-group">
                     <div class="radio-option">
                       <input type="radio" [id]="'rapper1-' + round.round_number" formControlName="winner" [value]="battle.rapper1_name">
-                      <label [for]="'rapper1-' + round.round_number">{{ battle.rapper1_name }}</label>
+                      <label [for]="'rapper1-' + round.round_number">
+                        <div class="rapper-initial">{{ getInitial(battle.rapper1_name) }}</div>
+                        {{ battle.rapper1_name }}
+                        <span class="crown-icon">👑</span>
+                      </label>
                     </div>
                     <div class="radio-option">
                       <input type="radio" [id]="'rapper2-' + round.round_number" formControlName="winner" [value]="battle.rapper2_name">
-                      <label [for]="'rapper2-' + round.round_number">{{ battle.rapper2_name }}</label>
+                      <label [for]="'rapper2-' + round.round_number">
+                        <div class="rapper-initial">{{ getInitial(battle.rapper2_name) }}</div>
+                        {{ battle.rapper2_name }}
+                        <span class="crown-icon">👑</span>
+                      </label>
                     </div>
                   </div>
                 </div>
                 
-                <div class="form-group">
-                  <label for="feedback">Your Feedback</label>
-                  <textarea id="feedback" formControlName="feedback" placeholder="Why did you choose this winner?"></textarea>
-                </div>
-                
                 <button type="submit" class="submit-btn" [disabled]="judgmentForm.invalid || loading">
+                  <span *ngIf="loading" class="loading-spinner" style="width:16px;height:16px;margin-right:8px;"></span>
                   Submit Your Judgment
                 </button>
               </form>
@@ -128,8 +130,11 @@
   </div>
 </section>
 
-<div *ngIf="!battle && !error" class="loading">
-  Loading battle...
+<div *ngIf="(!battle && !error) || loading" class="loading-container">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">{{ loading ? 'Judging round...' : 'Loading battle...' }}</p>
+  </div>
 </div>
 
 <div *ngIf="error" class="error">

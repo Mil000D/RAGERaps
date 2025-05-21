@@ -33,6 +33,7 @@
     </div>
     
     <button class="start-battle-btn" [disabled]="!isValidConfig() || loading" (click)="startBattle()">
+      <span *ngIf="loading" class="loading-spinner"></span>
       {{ loading ? 'CREATING BATTLE...' : 'START BATTLE' }}
     </button>
     
@@ -41,3 +42,11 @@
     </div>
   </div>
 </section>
+
+<div class="loading-container" *ngIf="loading">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Generating epic rap battle...</p>
+    <p class="loading-text">This may take a moment</p>
+  </div>
+</div>

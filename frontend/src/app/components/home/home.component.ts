@@ -22,11 +22,6 @@ export class HomeComponent {
       description: 'Choose from various rap styles: Old School, Trap, Conscious, Freestyle, and more.'
     },
     {
-      icon: '📝',
-      title: 'Topic Selection',
-      description: 'Select battle topics or let rappers clash on free themes for authentic battles.'
-    },
-    {
       icon: '👑',
       title: 'AI Judgment',
       description: 'Advanced AI analyzes verses and determines winners based on flow, wordplay, and delivery.'
@@ -36,10 +31,5 @@ export class HomeComponent {
       title: 'Multiple Rounds',
       description: 'Create battles with multiple rounds for extended lyrical warfare.'
     },
-    {
-      icon: '🏆',
-      title: 'Battle History',
-      description: 'Keep track of past battles and build rapper win records over time.'
-    }
   ];
 }

@@ -28,8 +28,7 @@ export class BattleArenaComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.judgmentForm = this.fb.group({
-      winner: ['', Validators.required],
-      feedback: ['', Validators.required]
+      winner: ['', Validators.required]
     });
   }
   
@@ -89,7 +88,7 @@ export class BattleArenaComponent implements OnInit {
     const judgment: JudgmentCreate = {
       round_id: roundId,
       winner: this.judgmentForm.value.winner,
-      feedback: this.judgmentForm.value.feedback
+      feedback: "User judgment selected " + this.judgmentForm.value.winner + " as the winner."
     };
     
     this.loading = true;
