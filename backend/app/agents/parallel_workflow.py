@@ -4,11 +4,10 @@ Parallel execution workflow for rap battle agents using LangGraph.
 from typing import Annotated, Dict, List, Optional, TypedDict
 import operator
 
-from langgraph.graph import END, StateGraph, add_messages
+from langgraph.graph import END, StateGraph
 
 from app.agents.judge_agent import judge_agent
 from app.agents.rapper_agent import rapper_agent
-from app.models.verse import Verse
 
 
 class RapperVerseState(TypedDict):
@@ -45,7 +44,7 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
             round_number=state["round_number"],
             previous_verses=state["previous_verses"]
         )
-    except Exception as e:
+    except Exception:
         # If there's an error, use a default verse
         verse_content = f"""Yo, I'm {state["rapper1_name"]}, stepping to the mic,
 Facing off with {state["rapper2_name"]}, gonna win this fight.
@@ -70,27 +69,15 @@ Watch me shine while your flow flops."""
 
 async def rapper2_verse_node(state: BattleRoundState) -> BattleRoundState:
     """Generate a verse for rapper 2."""
-    # Get rapper1's verse if it exists in the state
-    rapper1_verse = None
-    for verse in state.get("verses", []):
-        if verse["rapper_name"] == state["rapper1_name"]:
-            rapper1_verse = verse
-            break
-    
-    # Add rapper1's verse to previous verses if it exists
-    previous_verses = state["previous_verses"] or []
-    if rapper1_verse:
-        previous_verses = previous_verses + [rapper1_verse]
-    
     try:
         verse_content = await rapper_agent.generate_verse(
             rapper_name=state["rapper2_name"],
             opponent_name=state["rapper1_name"],
             style=state["style2"],
             round_number=state["round_number"],
-            previous_verses=previous_verses
+            previous_verses=state["previous_verses"]
         )
-    except Exception as e:
+    except Exception:
         # If there's an error, use a default verse
         verse_content = f"""I'm {state["rapper2_name"]}, the best in the game,
 After this battle, nothing will be the same.
@@ -118,17 +105,17 @@ async def judge_round_node(state: BattleRoundState) -> BattleRoundState:
     # Extract verses for both rappers
     rapper1_verse = None
     rapper2_verse = None
-    
+
     for verse in state["verses"]:
         if verse["rapper_name"] == state["rapper1_name"]:
             rapper1_verse = verse["content"]
         elif verse["rapper_name"] == state["rapper2_name"]:
             rapper2_verse = verse["content"]
-    
+
     # Ensure we have both verses
     if not rapper1_verse or not rapper2_verse:
         raise ValueError("Missing verses for judgment")
-    
+
     try:
         # Judge the round
         winner, feedback = await judge_agent.judge_round(
@@ -139,7 +126,7 @@ async def judge_round_node(state: BattleRoundState) -> BattleRoundState:
             rapper2_verse=rapper2_verse,
             rapper2_style=state["style2"]
         )
-    except Exception as e:
+    except Exception:
         # If there's an error, use a default judgment
         import random
         winner = state["rapper1_name"] if random.random() < 0.5 else state["rapper2_name"]
@@ -156,7 +143,7 @@ Both rappers showed skill, but {winner} had slightly better delivery and impact.
 Winner: {winner}
 {winner} wins this round with a more impressive overall performance.
 """
-    
+
     # Return the judgment
     return {
         "judgment": {
@@ -169,34 +156,34 @@ Winner: {winner}
 def create_battle_round_graph() -> StateGraph:
     """
     Create a StateGraph for parallel execution of a battle round.
-    
+
     This graph executes the rapper verse generation in parallel and then
     judges the round once both verses are available.
-    
+
     Returns:
         StateGraph: The compiled graph for battle round execution
     """
     # Create the graph
     graph = StateGraph(BattleRoundState)
-    
+
     # Add nodes
     graph.add_node("rapper1_verse", rapper1_verse_node)
     graph.add_node("rapper2_verse", rapper2_verse_node)
     graph.add_node("judge_round", judge_round_node)
-    
-    # Configure parallel execution for rapper nodes
-    from langchain_core.runnables import RunnableParallel
-    
-    # Add edges for parallel execution
-    # Start with both rapper nodes in parallel
-    graph.add_edge(END, "judge_round")
-    
+
     # Set up parallel execution of rapper verse generation
-    # Both rapper1_verse and rapper2_verse can run in parallel
+    # Both rapper1_verse and rapper2_verse run in parallel from the START node
     graph.set_entry_point("rapper1_verse")
-    graph.add_edge("rapper1_verse", "rapper2_verse")
+    graph.set_entry_point("rapper2_verse")
+
+    # Add edges from both rapper nodes to the judge node
+    # The judge node will only execute when both rapper nodes have completed
+    graph.add_edge("rapper1_verse", "judge_round")
     graph.add_edge("rapper2_verse", "judge_round")
-    
+
+    # Add edge from judge to END
+    graph.add_edge("judge_round", END)
+
     # Compile the graph
     return graph.compile()
 
@@ -216,7 +203,7 @@ async def execute_battle_round_parallel(
 ) -> Dict:
     """
     Execute a battle round with parallel agent execution.
-    
+
     Args:
         round_id: ID of the round
         rapper1_name: Name of the first rapper
@@ -225,7 +212,7 @@ async def execute_battle_round_parallel(
         style2: Style of the second rapper
         round_number: Round number
         previous_verses: Previous verses for context
-        
+
     Returns:
         Dict: The final state with verses and judgment
     """
@@ -241,8 +228,9 @@ async def execute_battle_round_parallel(
         "verses": [],
         "judgment": None
     }
-    
+
     # Execute the graph
+    # Use the ainvoke method for asynchronous execution
     final_state = await battle_round_graph.ainvoke(initial_state)
-    
+
     return final_state

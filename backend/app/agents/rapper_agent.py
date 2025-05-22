@@ -1,18 +1,15 @@
 """
 Rapper agent implementation using LangGraph.
 """
-from typing import Annotated, Dict, List, Literal, Optional, TypedDict
+from typing import Annotated, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, add_messages
-from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
-from app.tools.style_tool import style_tool
 
 
 class RapperState(TypedDict):
@@ -242,8 +239,9 @@ Follow these guidelines:
 4. IMPORTANT: Research {opponent_name}'s biography, career, and personal life using search tools.
 5. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career mistakes, controversies, or personal details.
 6. Reference at least 2-3 specific biographical details about {opponent_name} in your disses.
-7. Make your disses clever, creative, and authentic to {style} rap style.
-8. Keep the verse between 12-16 lines to allow room for detailed disses.
+7. Reference at least 2-3 specific facts about {rapper_name}'s life, career, or personal details to support your verse.
+8. Make your disses clever, creative, and authentic to {style} rap style.
+9. Keep the verse between 12-16 lines to allow room for detailed disses.
 """
 
         # Add common ending
