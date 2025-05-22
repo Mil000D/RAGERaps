@@ -1,9 +1,8 @@
 """
 Judge agent implementation using LangChain.
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Tuple
 
-from langchain_core.messages import SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -85,8 +84,8 @@ Your response should follow this format:
         """
         try:
             # Get style information for both rappers
-            style1_info = await style_tool.get_style(rapper1_style)
-            style2_info = await style_tool.get_style(rapper2_style)
+            style1_info = await style_tool.get_style.invoke(rapper1_style)
+            style2_info = await style_tool.get_style.invoke(rapper2_style)
 
             # Create the input with both styles
             input_text = f"""Rapper 1 ({rapper1_name}) Style: {rapper1_style}
@@ -116,7 +115,7 @@ Please judge this round and determine the winner. Consider how well each rapper 
             return winner, feedback
         except Exception:
             winner = "Error"
-            feedback = f"Exception occurred while judging the round. Try again."
+            feedback = "Exception occurred while judging the round. Try again."
             return winner, feedback
 
     def _extract_winner(self, judgment: str, rapper1_name: str, rapper2_name: str) -> Tuple[str, str]:
