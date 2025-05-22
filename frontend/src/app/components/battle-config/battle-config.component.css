@@ -1,33 +1,14 @@
 .battle-config {
-  padding: 2re.rapper-column h3 {
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  color: var(--light-text);
-}
-
-.rapper-column h3 span {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 0.5rem;
-  font-size: 0.9rem;
-}ntainer {
   background-color: #1a1a1a;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 2rem;
   max-width: 800px;
-  margin: 0 auto;
+  margin: 2rem auto 0;
 }
 
 .section-title {
-  color: var(--secondary-color);
+  color: #f44336;
   margin-bottom: 1.5rem;
   text-align: center;
 }
@@ -48,11 +29,12 @@
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
+  color: white;
 }
 
 .rapper-column h3 span {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #f44336;
+  color: white;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -67,12 +49,12 @@
 .text-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--light-gray);
+  border: 1px solid #555;
   border-radius: 5px;
   margin-bottom: 1rem;
   font-size: 1rem;
   background-color: #2a2a2a;
-  color: var(--light-text);
+  color: white;
 }
 
 .input-group {
@@ -83,11 +65,11 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: var(--light-text);
+  color: white;
 }
 
 input::placeholder {
-  color: var(--gray-text);
+  color: #999;
 }
 
 .versus {
@@ -101,8 +83,8 @@ input::placeholder {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #f44336;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -135,14 +117,14 @@ input::placeholder {
 .rounds-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--light-gray);
+  border: 1px solid #555;
   border-radius: 5px;
 }
 
 .start-battle-btn {
   display: block;
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #f44336;
+  color: white;
   padding: 1rem 2rem;
   font-size: 1.2rem;
   border-radius: 5px;
@@ -157,8 +139,58 @@ input::placeholder {
 }
 
 .start-battle-btn:disabled {
-  background-color: var(--light-gray);
+  background-color: #777;
   cursor: not-allowed;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-box {
+  background-color: #1a1a1a;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  max-width: 80%;
+}
+
+.loading-box .loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

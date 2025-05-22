@@ -1,92 +1,119 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { BattleService, Battle, Verse, Round, BattleResult } from '../../services/battle.service';
-import { BattleDisplayComponent } from '../battle-display/battle-display.component';
+import { Router, ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { BattleService } from '../../services/battle.service';
+import { Battle, Round, JudgmentCreate } from '../../models/battle.model';
 
 @Component({
   selector: 'app-battle-arena',
   standalone: true,
-  imports: [CommonModule, BattleDisplayComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './battle-arena.component.html',
   styleUrl: './battle-arena.component.css'
 })
 export class BattleArenaComponent implements OnInit {
   battle: Battle | null = null;
-  currentRound = 0;
+  battleId: string | null = null;
   loading = false;
-  generating = false;
-  battleComplete = false;
-  battleResult: BattleResult | null = null;
+  error: string | null = null;
+  judgmentForm: FormGroup;
+  rapper1Wins: number = 0;
+  rapper2Wins: number = 0;
   
   constructor(
     private battleService: BattleService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private route: ActivatedRoute,
+    private fb: FormBuilder
+  ) {
+    this.judgmentForm = this.fb.group({
+      winner: ['', Validators.required]
+    });
+  }
   
   ngOnInit(): void {
-    this.battle = this.battleService.getCurrentBattle();
     
-    if (!this.battle) {
-      // If no battle is found, redirect back to config
-      this.router.navigate(['/battle']);
-      return;
-    }
-    
-    this.startNextRound();
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.battleId = params['id'];
+        this.loadBattle(params['id']);
+      } else {
+        this.router.navigate(['/battle']);
+      }
+    });
   }
   
-  startNextRound(): void {
-    if (!this.battle || this.battleComplete) {
-      return;
-    }
-    
-    this.currentRound++;
-    if (this.currentRound > this.battle.config.rounds) {
-      this.completeBattle();
-      return;
-    }
-    
-    this.generating = true;
-    
-    // Generate first verse
-    if (this.battle && this.battle.config && this.battle.config.rapper1) {
-      this.battleService.generateVerse(this.battle.config.rapper1, this.currentRound)
-        .subscribe(verse1 => {
-          // Generate second verse
-          if (this.battle && this.battle.config && this.battle.config.rapper2) {
-            this.battleService.generateVerse(this.battle.config.rapper2, this.currentRound, [verse1])
-              .subscribe(verse2 => {
-                // Judge the round
-                this.battleService.judgeRound(verse1, verse2)
-                  .subscribe(round => {
-                    this.generating = false;
-                  });
-              });
-          }
-        });
-    }
+  loadBattle(id: string): void {
+    this.loading = true;
+    this.battleService.getBattle(id).subscribe({
+      next: (battle) => {
+        this.battle = battle;
+        this.loading = false;
+        
+        this.rapper1Wins = battle.rapper1_wins || 0;
+        this.rapper2Wins = battle.rapper2_wins || 0;
+      },
+      error: (err) => {
+        console.error('Error loading battle', err);
+        this.error = 'Failed to load battle. Please try again.';
+        this.loading = false;
+      }
+    });
   }
-  
-  completeBattle(): void {
-    if (!this.battle) {
-      return;
-    }
+
+  judgeRoundWithAI(battleId: string, roundId: string): void {
+    if (!this.battle) return;
     
     this.loading = true;
-    this.battleService.completeBattle()
-      .subscribe(result => {
-        this.battleResult = result;
-        this.battleComplete = true;
+    this.battleService.judgeRoundWithAI(battleId, roundId).subscribe({
+      next: (updatedBattle) => {
+        this.battle = updatedBattle;
         this.loading = false;
-      });
+        
+        this.rapper1Wins = updatedBattle.rapper1_wins || 0;
+        this.rapper2Wins = updatedBattle.rapper2_wins || 0;
+      },
+      error: (err) => {
+        console.error('Error judging round with AI', err);
+        this.error = 'Failed to judge round with AI. Please try again.';
+        this.loading = false;
+      }
+    });
   }
   
-  configureNewBattle(): void {
+  judgeRoundByUser(battleId: string, roundId: string): void {
+    if (!this.battle || this.judgmentForm.invalid) return;
+    
+    const judgment: JudgmentCreate = {
+      round_id: roundId,
+      winner: this.judgmentForm.value.winner,
+      feedback: "User judgment selected " + this.judgmentForm.value.winner + " as the winner."
+    };
+    
+    this.loading = true;
+    this.battleService.judgeRoundByUser(battleId, roundId, judgment).subscribe({
+      next: (updatedBattle) => {
+        this.battle = updatedBattle;
+        this.loading = false;
+        
+        this.rapper1Wins = updatedBattle.rapper1_wins || 0;
+        this.rapper2Wins = updatedBattle.rapper2_wins || 0;
+        this.judgmentForm.reset();
+      },
+      error: (err) => {
+        console.error('Error submitting user judgment', err);
+        this.error = 'Failed to submit judgment. Please try again.';
+        this.loading = false;
+      }
+    });
+  }
+  
+  backToList(): void {
     this.router.navigate(['/battle']);
   }
   
   getInitial(name: string): string {
-    return name ? name.charAt(0).toUpperCase() : 'R';
+    return name ? name.charAt(0).toUpperCase() : '';
   }
 }

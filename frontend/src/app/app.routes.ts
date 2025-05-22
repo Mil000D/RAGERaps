@@ -7,6 +7,6 @@ import { BattleArenaComponent } from './components/battle-arena/battle-arena.com
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'battle', component: BattleConfigComponent },
-  { path: 'battle/arena', component: BattleArenaComponent },
+  { path: 'battle/arena/:id', component: BattleArenaComponent },
   { path: '**', redirectTo: '' }
 ];

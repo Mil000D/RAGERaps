@@ -13,23 +13,23 @@ export class HomeComponent {
   features = [
     {
       icon: '🎤',
-      title: 'AI-Powered Verses',
-      description: 'Generate authentic rap verses in the style of your favorite artists using cutting-edge AI technology.'
+      title: 'Custom Rappers',
+      description: 'Create battles with any rappers, real or fictional. Our AI captures their unique style and flow.'
     },
     {
-      icon: '🏆',
-      title: 'Epic Battles',
-      description: 'Set up battles between any rappers and watch them go head-to-head in a lyrical showdown.'
+      icon: '🎭',
+      title: 'Multiple Styles',
+      description: 'Choose from various rap styles: Old School, Trap, Conscious, Freestyle, and more.'
     },
     {
-      icon: '🔥',
-      title: 'Fair Judging',
-      description: 'Our AI judges evaluate flow, rhyme schemes, wordplay, and punchlines to determine winners.'
+      icon: '👑',
+      title: 'AI Judgment',
+      description: 'Advanced AI analyzes verses and determines winners based on flow, wordplay, and delivery.'
     },
     {
-      icon: '🎯',
-      title: 'Custom Topics',
-      description: 'Choose topics and styles to direct the battle in any direction you want.'
-    }
+      icon: '🔄',
+      title: 'Multiple Rounds',
+      description: 'Create battles with multiple rounds for extended lyrical warfare.'
+    },
   ];
 }

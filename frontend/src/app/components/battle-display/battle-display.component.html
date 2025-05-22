@@ -8,24 +8,24 @@
   </div>
   
   <div class="verses-container">
-    <div class="verse-card" [ngClass]="getWinnerClass(round.verse1.rapper)" *ngIf="round.verse1">
+    <div class="verse-card" [ngClass]="getWinnerClass(round.rapper1_verse.rapper_name)" *ngIf="round.rapper1_verse">
       <div class="verse-header">
-        <div class="verse-rapper-initial">{{ getInitial(round.verse1.rapper.name) }}</div>
+        <div class="verse-rapper-initial">{{ getInitial(round.rapper1_verse.rapper_name) }}</div>
         <div>
-          <h4 class="verse-rapper-name">{{ round.verse1.rapper.name }}</h4>
+          <h4 class="verse-rapper-name">{{ round.rapper1_verse.rapper_name }}</h4>
         </div>
       </div>
-      <p class="verse-text">{{ round.verse1.text }}</p>
+      <p class="verse-text">{{ round.rapper1_verse.content }}</p>
     </div>
     
-    <div class="verse-card" [ngClass]="getWinnerClass(round.verse2.rapper)" *ngIf="round.verse2">
+    <div class="verse-card" [ngClass]="getWinnerClass(round.rapper2_verse.rapper_name)" *ngIf="round.rapper2_verse">
       <div class="verse-header">
-        <div class="verse-rapper-initial">{{ getInitial(round.verse2.rapper.name) }}</div>
+        <div class="verse-rapper-initial">{{ getInitial(round.rapper2_verse.rapper_name) }}</div>
         <div>
-          <h4 class="verse-rapper-name">{{ round.verse2.rapper.name }}</h4>
+          <h4 class="verse-rapper-name">{{ round.rapper2_verse.rapper_name }}</h4>
         </div>
       </div>
-      <p class="verse-text">{{ round.verse2.text }}</p>
+      <p class="verse-text">{{ round.rapper2_verse.content }}</p>
     </div>
   </div>
   
@@ -39,7 +39,7 @@
   
   <div class="judge-container" *ngIf="judgeResult">
     <div class="judge-result">
-      <p>Round {{ roundNumber }} Winner: <strong>{{ round.winner?.name }}</strong></p>
+      <p>Round {{ roundNumber }} Winner: <strong>{{ round.winner }}</strong></p>
     </div>
   </div>
 </div>

@@ -2,8 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { RapperService, Rapper } from '../../services/rapper.service';
-import { BattleService, BattleConfig } from '../../services/battle.service';
+import { BattleService } from '../../services/battle.service';
+import { BattleCreate } from '../../models/battle.model';
+import { BattleConfig } from '../../models/battle-config.model';
 
 @Component({
   selector: 'app-battle-config',
@@ -17,15 +18,17 @@ export class BattleConfigComponent implements OnInit {
   rapper1Style: string = '';
   rapper2Name: string = '';
   rapper2Style: string = '';
+  loading: boolean = false;
+  errorMessage: string = '';
   
   config: BattleConfig = {
-    rapper1: {} as Rapper,
-    rapper2: {} as Rapper,
+    rapper1: { name: '' },
+    rapper2: { name: '' },
     rounds: 3,
     topic: '',
     style: ''
   };
-  
+
   topics: string[] = [
     'Money & Success',
     'Street Life',
@@ -37,46 +40,57 @@ export class BattleConfigComponent implements OnInit {
     'Party Life',
     'Legacy & Fame'
   ];
-  
+
   constructor(
-    private rapperService: RapperService,
     private battleService: BattleService,
     private router: Router
   ) {}
-  
+
   ngOnInit(): void {
-    // No need to load rappers anymore
+    
   }
-  
+
   startBattle(): void {
     if (!this.isValidConfig()) {
       return;
     }
     
-    // Create rapper objects from the input fields
-    this.config.rapper1 = {
-      name: this.rapper1Name,
-      id: `custom-${Date.now()}-1` // Generate a unique ID
+    
+    const battleCreate: BattleCreate = {
+      style1: this.rapper1Style || 'Freestyle',
+      style2: this.rapper2Style || 'Freestyle',
+      rapper1_name: this.rapper1Name,
+      rapper2_name: this.rapper2Name
     };
     
-    this.config.rapper2 = {
-      name: this.rapper2Name,
-      id: `custom-${Date.now()}-2` // Generate a unique ID
-    };
     
-    // Add rapper styles to the config
-    this.config.style = `${this.rapper1Style} vs ${this.rapper2Style}`;
+    this.loading = true;
+    this.errorMessage = '';
     
-    this.battleService.createBattle(this.config)
-      .subscribe(() => {
-        this.router.navigate(['/battle/arena']);
+    
+    this.battleService.generateBattleWithVerses(battleCreate)
+      .subscribe({
+        next: (battle) => {
+          this.loading = false;
+          if (battle && battle.id) {
+            this.router.navigate(['/battle/arena', battle.id]);
+          } else {
+            console.error("Failed to create battle");
+            this.errorMessage = "Failed to create battle. Please try again.";
+          }
+        },
+        error: (err) => {
+          this.loading = false;
+          console.error("Error creating battle:", err);
+          this.errorMessage = "An error occurred while creating the battle. Please try again.";
+        }
       });
   }
-  
+
   isValidConfig(): boolean {
     return (
-      !!this.rapper1Name && 
-      !!this.rapper2Name && 
+      !!this.rapper1Name &&
+      !!this.rapper2Name &&
       this.rapper1Name !== this.rapper2Name &&
       this.config.rounds > 0 &&
       this.config.rounds <= 5
