@@ -13,7 +13,10 @@
 .logo {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  gap: 0.7rem;
 }
+
 
 .logo-text {
   font-family: 'Permanent Marker', cursive;
@@ -26,7 +29,23 @@
 
 .logo-text span.rage {
   color: var(--secondary-color);
-  margin-right: 0.5rem;
+}
+
+.logo-text span.e {
+  background-image: linear-gradient(to right, var(--secondary-color), var(--light-text));
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  margin: 0 0.2rem;
+
+  position: relative;
+}
+
+.logo-text span.raps {
+  color: var(--light-text);
 }
 
 .nav-links {
@@ -59,11 +78,11 @@
     flex-direction: column;
     padding: 0.5rem;
   }
-  
+
   .nav-links {
     margin-top: 1rem;
   }
-  
+
   .nav-links li {
     margin-left: 1rem;
     margin-right: 1rem;
