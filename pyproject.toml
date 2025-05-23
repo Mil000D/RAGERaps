@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ragerapsviz"
+version = "0.1.0"
+description = "Visualization tools for RAGERaps"
+requires-python = ">=3.8"
+dependencies = [
+    "ipython",
+    "langgraph",
+]
+
+[project.scripts]
+visualize-battle-graph = "visualize_battle_graph:visualize_battle_graph"
