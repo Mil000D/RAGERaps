@@ -11,8 +11,13 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# Add the parent directory to sys.path to allow running with uv run
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add necessary directories to sys.path to allow running with uv run
+visualization_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(visualization_dir, '..'))
+
+# Add both the backend directory and the parent of backend to sys.path
+sys.path.insert(0, backend_dir)  # For importing app module
+sys.path.insert(0, os.path.dirname(backend_dir))  # For importing backend module
 
 from langchain_core.runnables.graph_mermaid import draw_mermaid_png, MermaidDrawMethod
 from langgraph.graph import StateGraph

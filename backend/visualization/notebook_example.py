@@ -8,8 +8,13 @@ or other interactive environment.
 import sys
 import os
 
-# Add the parent directory to sys.path to allow running with uv run
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add necessary directories to sys.path to allow running with uv run
+visualization_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(visualization_dir, '..'))
+
+# Add both the backend directory and the parent of backend to sys.path
+sys.path.insert(0, backend_dir)  # For importing app module
+sys.path.insert(0, os.path.dirname(backend_dir))  # For importing backend module
 
 from IPython.display import Image, display
 
