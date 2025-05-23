@@ -24,6 +24,10 @@ visualize_graph(
 **Usage as a script:**
 
 ```bash
+# Using uv run
+uv run backend/visualization/visualize_graphs.py
+
+# Or using python directly
 python -m visualization.visualize_graphs
 ```
 
@@ -36,6 +40,10 @@ A script that specifically visualizes the battle round graph from the parallel w
 **Usage:**
 
 ```bash
+# Using uv run
+uv run backend/visualization/generate_graph.py
+
+# Or using python directly
 python -m visualization.generate_graph
 ```
 
@@ -46,14 +54,17 @@ A command-line interface for visualizing specific graphs.
 **Usage:**
 
 ```bash
-# Visualize a specific graph
+# Using uv run - Visualize a specific graph
+uv run backend/visualization/cli.py --graph app.agents.parallel_workflow.battle_round_graph
+
+# Using uv run - Visualize a specific graph with custom options
+uv run backend/visualization/cli.py --graph app.agents.parallel_workflow.battle_round_graph --output custom_name --bg-color lightblue --padding 20
+
+# Using uv run - Visualize all known graphs
+uv run backend/visualization/cli.py --all
+
+# Or using python directly
 python -m visualization.cli --graph app.agents.parallel_workflow.battle_round_graph
-
-# Visualize a specific graph with custom options
-python -m visualization.cli --graph app.agents.parallel_workflow.battle_round_graph --output custom_name --bg-color lightblue --padding 20
-
-# Visualize all known graphs
-python -m visualization.cli --all
 ```
 
 ## Examples
@@ -61,6 +72,10 @@ python -m visualization.cli --all
 To visualize the battle round graph:
 
 ```bash
+# Using uv run
+uv run backend/visualization/cli.py --graph app.agents.parallel_workflow.battle_round_graph
+
+# Or using python directly
 python -m visualization.cli --graph app.agents.parallel_workflow.battle_round_graph
 ```
 
