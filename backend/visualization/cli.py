@@ -83,10 +83,18 @@ async def main():
     if not args.graph:
         parser.error("Either --graph or --all must be specified")
 
-    # Import the graph from the specified module
-    module_path, attr_name = args.graph.rsplit(".", 1)
-    module = importlib.import_module(module_path)
-    graph = getattr(module, attr_name)
+    try:
+        # Import the graph from the specified module
+        module_path, attr_name = args.graph.rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        graph = getattr(module, attr_name)
+    except Exception as e:
+        print(f"Error importing graph: {e}")
+        print("\nThis error might be due to missing API keys in your environment.")
+        print("To use this tool without setting up API keys, you need to:")
+        print("1. Create a .env file in the backend directory with the required API keys")
+        print("2. Or modify the code to use mock graphs for visualization")
+        return
 
     # Determine the output filename
     output_filename = args.output or attr_name

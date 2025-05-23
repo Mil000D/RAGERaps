@@ -18,8 +18,7 @@ sys.path.insert(0, os.path.dirname(backend_dir))  # For importing backend module
 
 from IPython.display import Image, display
 
-# Import the graph from the parallel workflow
-from app.agents.parallel_workflow import battle_round_graph
+# Import statements for graphs - will be imported inside the function with error handling
 
 
 def display_graph_visualization():
@@ -33,11 +32,20 @@ def display_graph_visualization():
     Returns:
         None
     """
-    # Get the PNG data from the graph
-    png_data = battle_round_graph.get_graph().draw_mermaid_png()
+    try:
+        # Import the graph from the parallel workflow
+        from app.agents.parallel_workflow import battle_round_graph
 
-    # Display the image
-    display(Image(png_data))
+        # Get the PNG data from the graph
+        png_data = battle_round_graph.get_graph().draw_mermaid_png()
+
+        # Display the image
+        display(Image(png_data))
+    except Exception as e:
+        print(f"Error displaying graph visualization: {e}")
+        print("\nTo visualize graphs in a notebook without setting up API keys, you need to:")
+        print("1. Set up the required API keys in your environment")
+        print("2. Or use the CLI tool with a specific graph: uv run backend/visualization/cli.py --graph <graph_path>")
 
 
 # Example usage in a Jupyter notebook:

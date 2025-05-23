@@ -80,25 +80,32 @@ async def visualize_all_graphs():
     This function imports all graphs from the project and generates
     visualizations for each one.
     """
-    # Import the graphs
-    from app.agents.parallel_workflow import battle_round_graph
-
-    # Visualize the battle round graph
-    visualize_graph(
-        graph=battle_round_graph,
-        output_filename="battle_round_graph"
-    )
-
-    # Try to import and visualize rapper agent graph if it exists
+    # Try to import the graphs with error handling for missing API keys
     try:
-        from app.agents.rapper_agent import rapper_agent
-        if hasattr(rapper_agent, "graph") and rapper_agent.graph:
-            visualize_graph(
-                graph=rapper_agent.graph,
-                output_filename="rapper_agent_graph"
-            )
-    except (ImportError, AttributeError):
-        print("Rapper agent graph not available for visualization")
+        # Import the graphs
+        from app.agents.parallel_workflow import battle_round_graph
+
+        # Visualize the battle round graph
+        visualize_graph(
+            graph=battle_round_graph,
+            output_filename="battle_round_graph"
+        )
+
+        # Try to import and visualize rapper agent graph if it exists
+        try:
+            from app.agents.rapper_agent import rapper_agent
+            if hasattr(rapper_agent, "graph") and rapper_agent.graph:
+                visualize_graph(
+                    graph=rapper_agent.graph,
+                    output_filename="rapper_agent_graph"
+                )
+        except (ImportError, AttributeError):
+            print("Rapper agent graph not available for visualization")
+
+    except Exception as e:
+        print(f"Error importing graphs: {e}")
+        print("\nTo visualize graphs without setting up API keys, you need to provide a graph directly.")
+        print("Example: uv run backend/visualization/cli.py --graph app.agents.parallel_workflow.battle_round_graph")
 
 
 if __name__ == "__main__":

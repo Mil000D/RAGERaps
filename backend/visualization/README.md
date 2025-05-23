@@ -89,3 +89,14 @@ These scripts require the following dependencies:
 - langgraph
 
 These dependencies are already included in the project's requirements.
+
+## Using Without API Keys
+
+If you want to visualize graphs without setting up API keys, you can use the mock graph:
+
+```bash
+# Visualize a mock graph
+uv run backend/visualization/mock_graph.py
+```
+
+This will generate a visualization of a mock battle round graph that has the same structure as the real one but doesn't require any API keys or environment variables.
