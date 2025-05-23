@@ -1,5 +1,6 @@
 .battle-arena {
-  max-width: 900px;
+  min-width: fit-content;
+  width: 60vw;
   margin: 0 auto;
   padding: 20px;
 }
@@ -9,7 +10,8 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 2rem;
-  max-width: 1000px;
+  width: 60vw;
+  min-width: fit-content;
   margin: 0 auto;
 }
 
@@ -116,7 +118,9 @@
 
 .verses {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
   gap: 20px;
   margin-bottom: 20px;
 }
@@ -125,6 +129,8 @@
   background-color: #1e1e1e;
   border-radius: 4px;
   padding: 15px;
+  flex: 1;
+  min-width: fit-content;
 }
 
 .verse h3 {
