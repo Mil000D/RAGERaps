@@ -5,6 +5,7 @@ import asyncio
 import csv
 import tempfile
 import chardet
+import re
 from pathlib import Path
 from typing import List, Optional, AsyncGenerator
 from uuid import uuid4
@@ -25,6 +26,31 @@ class CSVProcessorService:
     def __init__(self):
         """Initialize the CSV processor service."""
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=settings.openai_api_key)
+
+    @staticmethod
+    def clean_lyrics_text(text: str) -> str:
+        """
+        Clean lyrics text by removing newline characters and handling special characters.
+
+        Args:
+            text: Raw lyrics text that may contain newlines
+
+        Returns:
+            str: Cleaned lyrics text suitable for CSV storage
+        """
+        if not isinstance(text, str):
+            return str(text) if text is not None else ""
+
+        # Remove all types of newline characters
+        cleaned = re.sub(r'[\r\n]+', ' ', text)
+
+        # Replace multiple spaces with single space
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+
+        # Strip leading and trailing whitespace
+        cleaned = cleaned.strip()
+
+        return cleaned
 
     def _detect_encoding(self, file_path: str) -> str:
         """
@@ -166,9 +192,12 @@ class CSVProcessorService:
         Returns:
             ProcessingResult: Summary of processing results
         """
+        # Pre-process the CSV content to handle potential newline issues in lyrics
+        processed_content = self._preprocess_csv_content(csv_content)
+
         # Create temporary file for CSV content with UTF-8 encoding
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as temp_file:
-            temp_file.write(csv_content)
+            temp_file.write(processed_content)
             temp_file_path = temp_file.name
 
         try:
@@ -177,6 +206,46 @@ class CSVProcessorService:
         finally:
             # Clean up temporary file
             Path(temp_file_path).unlink(missing_ok=True)
+
+    def _preprocess_csv_content(self, csv_content: str) -> str:
+        """
+        Preprocess CSV content to handle newlines within quoted fields.
+
+        Args:
+            csv_content: Raw CSV content
+
+        Returns:
+            str: Preprocessed CSV content
+        """
+        import io
+        import csv as csv_module
+
+        # Use StringIO to read the CSV content
+        input_stream = io.StringIO(csv_content)
+        output_stream = io.StringIO()
+
+        try:
+            # Read with csv module to properly handle quoted fields
+            reader = csv_module.reader(input_stream, quotechar='"', delimiter=',')
+            writer = csv_module.writer(output_stream, quotechar='"', delimiter=',', quoting=csv_module.QUOTE_ALL)
+
+            for row in reader:
+                # Clean each field, especially lyrics which might be in the last column
+                cleaned_row = []
+                for i, field in enumerate(row):
+                    if i == len(row) - 1 and len(row) >= 4:  # Assuming lyrics is the last column
+                        cleaned_field = self.clean_lyrics_text(field)
+                    else:
+                        cleaned_field = field.strip() if field else ""
+                    cleaned_row.append(cleaned_field)
+                writer.writerow(cleaned_row)
+
+            return output_stream.getvalue()
+
+        except Exception as e:
+            # If preprocessing fails, return original content
+            print(f"Warning: CSV preprocessing failed: {e}. Using original content.")
+            return csv_content
     
     async def _process_csv_in_batches(
         self, 
@@ -305,11 +374,15 @@ class CSVProcessorService:
                 key, value = line.split(':', 1)
                 data[key.strip()] = value.strip()
         
+        # Clean the lyric text before creating ArtistData
+        raw_lyric = data.get('Lyric', '')
+        cleaned_lyric = self.clean_lyrics_text(raw_lyric)
+
         return ArtistData(
             artist=data.get('Artist', ''),
             genres=data.get('Genres', ''),
             songs=float(data.get('Songs', 0)),
-            lyric=data.get('Lyric', '')
+            lyric=cleaned_lyric
         )
     
     async def _process_artist_data(self, artist_data: ArtistData) -> str:

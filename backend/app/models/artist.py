@@ -1,17 +1,43 @@
 """
 Artist data models for CSV processing.
 """
+import re
 from typing import List, Optional
 from pydantic import BaseModel, Field, validator
 
 
 class ArtistData(BaseModel):
     """Model representing an artist's data from CSV."""
-    
+
     artist: str = Field(..., description="Artist name")
     genres: str = Field(..., description="Semicolon-separated genres")
     songs: float = Field(..., description="Number of songs")
     lyric: str = Field(..., description="Song lyrics text")
+
+    @staticmethod
+    def clean_lyrics_text(text: str) -> str:
+        """
+        Clean lyrics text by removing newline characters and handling special characters.
+
+        Args:
+            text: Raw lyrics text that may contain newlines
+
+        Returns:
+            str: Cleaned lyrics text suitable for CSV storage
+        """
+        if not isinstance(text, str):
+            return str(text) if text is not None else ""
+
+        # Remove all types of newline characters
+        cleaned = re.sub(r'[\r\n]+', ' ', text)
+
+        # Replace multiple spaces with single space
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+
+        # Strip leading and trailing whitespace
+        cleaned = cleaned.strip()
+
+        return cleaned
     
     @validator('genres')
     def validate_genres(cls, v):
@@ -29,10 +55,14 @@ class ArtistData(BaseModel):
     
     @validator('lyric')
     def validate_lyric(cls, v):
-        """Validate that lyric is not empty."""
-        if not v or not v.strip():
+        """Validate and clean lyric text."""
+        if not v or not str(v).strip():
             raise ValueError("Lyric cannot be empty")
-        return v.strip()
+        # Clean the lyrics text to remove newlines and normalize whitespace
+        cleaned = cls.clean_lyrics_text(v)
+        if not cleaned:
+            raise ValueError("Lyric cannot be empty after cleaning")
+        return cleaned
     
     @validator('songs')
     def validate_songs(cls, v):

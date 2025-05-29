@@ -8,17 +8,47 @@ It merges based on Link/ALink columns and filters for English language songs onl
 import pandas as pd
 import argparse
 import sys
+import re
 from pathlib import Path
 from typing import Optional
 
 
 class CSVMerger:
     """Handles merging of artist and song CSV files."""
-    
+
     def __init__(self):
         self.artists_df: Optional[pd.DataFrame] = None
         self.songs_df: Optional[pd.DataFrame] = None
         self.merged_df: Optional[pd.DataFrame] = None
+
+    @staticmethod
+    def clean_lyrics_text(text: str) -> str:
+        """
+        Clean lyrics text by removing newline characters and handling special characters.
+
+        Args:
+            text: Raw lyrics text that may contain newlines
+
+        Returns:
+            str: Cleaned lyrics text suitable for CSV storage
+        """
+        if not isinstance(text, str):
+            return str(text) if text is not None else ""
+
+        # Remove all types of newline characters
+        cleaned = re.sub(r'[\r\n]+', ' ', text)
+
+        # Replace multiple spaces with single space
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+
+        # Strip leading and trailing whitespace
+        cleaned = cleaned.strip()
+
+        # Handle quotes by escaping them properly for CSV
+        # pandas.to_csv will handle this automatically, but we ensure consistency
+        cleaned = cleaned.replace('"', '""')
+
+        return cleaned
     
     def load_artists_csv(self, file_path: str) -> None:
         """
@@ -85,6 +115,12 @@ class CSVMerger:
 
             print(f"✓ Loaded songs CSV: {len(self.songs_df)} records")
 
+            # Clean lyrics text to remove newlines and handle special characters
+            if 'Lyric' in self.songs_df.columns:
+                print("Cleaning lyrics text...")
+                self.songs_df['Lyric'] = self.songs_df['Lyric'].apply(self.clean_lyrics_text)
+                print("✓ Lyrics text cleaned")
+
         except Exception as e:
             raise Exception(f"Error loading songs CSV: {str(e)}")
     
@@ -133,8 +169,21 @@ class CSVMerger:
             raise ValueError("No merged data to save. Run merge_data() first.")
 
         try:
+            # Clean lyrics in the merged data before saving
+            if 'Lyric' in self.merged_df.columns:
+                print("Final cleaning of lyrics text before saving...")
+                self.merged_df['Lyric'] = self.merged_df['Lyric'].apply(self.clean_lyrics_text)
+
             # Always save with UTF-8 encoding to ensure Unicode characters are preserved
-            self.merged_df.to_csv(output_path, index=False, encoding='utf-8')
+            # Use proper CSV quoting to handle special characters
+            self.merged_df.to_csv(
+                output_path,
+                index=False,
+                encoding='utf-8',
+                quoting=1,  # QUOTE_ALL - ensures all fields are quoted
+                escapechar='\\',  # Escape character for special cases
+                lineterminator='\n'  # Ensure consistent line endings
+            )
             print(f"✓ Saved merged CSV to: {output_path}")
 
         except Exception as e:
