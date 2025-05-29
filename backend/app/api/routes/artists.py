@@ -29,26 +29,49 @@ class CSVContentRequest(BaseModel):
 @router.post("/upload-csv", response_model=ProcessingResult)
 async def upload_csv_file(file: UploadFile = File(...)):
     """
-    Upload and process a CSV file with artist data.
-    
+    Upload and process a CSV file with artist data with proper Unicode handling.
+
     Args:
         file: CSV file with columns: Artist, Genres, Songs, Lyric
-        
+
     Returns:
         ProcessingResult: Summary of processing results
     """
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV file")
-    
+
     try:
-        # Read file content
+        # Read file content as bytes
         content = await file.read()
-        csv_content = content.decode('utf-8')
-        
+
+        # Try to decode with different encodings
+        csv_content = None
+        encodings_to_try = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-1']
+
+        for encoding in encodings_to_try:
+            try:
+                csv_content = content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                if encoding == encodings_to_try[-1]:  # Last encoding failed
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Could not decode the CSV file. Please ensure it's properly encoded."
+                    )
+                continue
+
+        if csv_content is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not decode the CSV file with any supported encoding."
+            )
+
         # Process the CSV content
         result = await data_pipeline_service.process_csv_string(csv_content)
         return result
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process CSV file: {str(e)}")
 

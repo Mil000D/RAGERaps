@@ -22,45 +22,69 @@ class CSVMerger:
     
     def load_artists_csv(self, file_path: str) -> None:
         """
-        Load the artists CSV file.
-        
+        Load the artists CSV file with proper Unicode handling.
+
         Expected columns: Artist, Genres, Songs, Popularity, Link
-        
+
         Args:
             file_path: Path to the artists CSV file
         """
         try:
-            self.artists_df = pd.read_csv(file_path)
+            # Try UTF-8 first, then fallback to other encodings
+            encodings_to_try = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-1']
+
+            for encoding in encodings_to_try:
+                try:
+                    self.artists_df = pd.read_csv(file_path, encoding=encoding)
+                    print(f"✓ Successfully loaded artists CSV with {encoding} encoding")
+                    break
+                except UnicodeDecodeError:
+                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                        raise
+                    continue
+
             required_columns = ['Artist', 'Genres', 'Songs', 'Popularity', 'Link']
-            
+
             if not all(col in self.artists_df.columns for col in required_columns):
                 missing = [col for col in required_columns if col not in self.artists_df.columns]
                 raise ValueError(f"Artists CSV missing required columns: {missing}")
-                
+
             print(f"✓ Loaded artists CSV: {len(self.artists_df)} records")
-            
+
         except Exception as e:
             raise Exception(f"Error loading artists CSV: {str(e)}")
     
     def load_songs_csv(self, file_path: str) -> None:
         """
-        Load the songs CSV file.
-        
+        Load the songs CSV file with proper Unicode handling.
+
         Expected columns: ALink, SName, SLink, Lyric, language
-        
+
         Args:
             file_path: Path to the songs CSV file
         """
         try:
-            self.songs_df = pd.read_csv(file_path)
+            # Try UTF-8 first, then fallback to other encodings
+            encodings_to_try = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-1']
+
+            for encoding in encodings_to_try:
+                try:
+                    self.songs_df = pd.read_csv(file_path, encoding=encoding)
+                    print(f"✓ Successfully loaded songs CSV with {encoding} encoding")
+                    break
+                except UnicodeDecodeError:
+                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                        raise
+                    continue
+
             required_columns = ['ALink', 'SName', 'SLink', 'Lyric', 'language']
-            
+
             if not all(col in self.songs_df.columns for col in required_columns):
                 missing = [col for col in required_columns if col not in self.songs_df.columns]
                 raise ValueError(f"Songs CSV missing required columns: {missing}")
-                
+
             print(f"✓ Loaded songs CSV: {len(self.songs_df)} records")
-            
+
         except Exception as e:
             raise Exception(f"Error loading songs CSV: {str(e)}")
     
@@ -100,18 +124,19 @@ class CSVMerger:
     
     def save_merged_csv(self, output_path: str) -> None:
         """
-        Save the merged data to a CSV file.
-        
+        Save the merged data to a CSV file with proper Unicode encoding.
+
         Args:
             output_path: Path where to save the merged CSV file
         """
         if self.merged_df is None:
             raise ValueError("No merged data to save. Run merge_data() first.")
-        
+
         try:
-            self.merged_df.to_csv(output_path, index=False)
+            # Always save with UTF-8 encoding to ensure Unicode characters are preserved
+            self.merged_df.to_csv(output_path, index=False, encoding='utf-8')
             print(f"✓ Saved merged CSV to: {output_path}")
-            
+
         except Exception as e:
             raise Exception(f"Error saving merged CSV: {str(e)}")
     

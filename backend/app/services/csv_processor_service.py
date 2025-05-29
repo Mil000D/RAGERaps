@@ -4,6 +4,7 @@ CSV processing service for artist data using LangChain components.
 import asyncio
 import csv
 import tempfile
+import chardet
 from pathlib import Path
 from typing import List, Optional, AsyncGenerator
 from uuid import uuid4
@@ -20,18 +21,70 @@ from app.services.vector_store_service import vector_store_service
 
 class CSVProcessorService:
     """Service for processing CSV files with artist data."""
-    
+
     def __init__(self):
         """Initialize the CSV processor service."""
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=settings.openai_api_key)
+
+    def _detect_encoding(self, file_path: str) -> str:
+        """
+        Detect the encoding of a file using chardet.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            str: Detected encoding or 'utf-8' as fallback
+        """
+        try:
+            with open(file_path, 'rb') as file:
+                # Read a sample of the file for detection
+                raw_data = file.read(10000)  # Read first 10KB
+                result = chardet.detect(raw_data)
+                encoding = result.get('encoding', 'utf-8')
+                confidence = result.get('confidence', 0)
+
+                # If confidence is too low, fallback to utf-8
+                if confidence < 0.7:
+                    encoding = 'utf-8'
+
+                return encoding
+        except Exception:
+            # If detection fails, fallback to utf-8
+            return 'utf-8'
+
+    def _get_encoding_fallbacks(self, detected_encoding: str) -> List[str]:
+        """
+        Get a list of encodings to try, starting with the detected one.
+
+        Args:
+            detected_encoding: The encoding detected by chardet
+
+        Returns:
+            List[str]: List of encodings to try in order
+        """
+        # Common encodings to try
+        common_encodings = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-1']
+
+        # Start with detected encoding if it's not already in the list
+        if detected_encoding and detected_encoding.lower() not in [enc.lower() for enc in common_encodings]:
+            return [detected_encoding] + common_encodings
+
+        # If detected encoding is already in common list, prioritize it
+        if detected_encoding:
+            encodings = [detected_encoding]
+            encodings.extend([enc for enc in common_encodings if enc.lower() != detected_encoding.lower()])
+            return encodings
+
+        return common_encodings
     
     async def process_csv_file(self, file_path: str) -> ProcessingResult:
         """
-        Process a CSV file and return processing results.
-        
+        Process a CSV file and return processing results with proper encoding handling.
+
         Args:
             file_path: Path to the CSV file
-            
+
         Returns:
             ProcessingResult: Summary of processing results
         """
@@ -39,29 +92,62 @@ class CSVProcessorService:
         successful_records = 0
         failed_records = 0
         errors = []
-        
+
         try:
-            # Load CSV using LangChain's CSVLoader
-            loader = CSVLoader(
-                file_path=file_path,
-                csv_args={
-                    "delimiter": ",",
-                    "quotechar": "\"",
-                    "fieldnames": ["Artist", "Genres", "Songs", "Lyric"]
-                }
-            )
-            
+            # Detect file encoding
+            detected_encoding = self._detect_encoding(file_path)
+            encodings_to_try = self._get_encoding_fallbacks(detected_encoding)
+
+            loader = None
+            successful_encoding = None
+
+            # Try different encodings until one works
+            for encoding in encodings_to_try:
+                try:
+                    # Load CSV using LangChain's CSVLoader with specific encoding
+                    loader = CSVLoader(
+                        file_path=file_path,
+                        encoding=encoding,
+                        csv_args={
+                            "delimiter": ",",
+                            "quotechar": "\"",
+                            "fieldnames": ["Artist", "Genres", "Songs", "Lyric"]
+                        }
+                    )
+
+                    # Test if the loader can read the file by trying to load one document
+                    test_docs = list(loader.lazy_load())
+                    if test_docs:  # If we can load at least one document, encoding is good
+                        successful_encoding = encoding
+                        break
+
+                except (UnicodeDecodeError, UnicodeError) as e:
+                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                        errors.append(f"Failed to decode file with any encoding. Last error: {str(e)}")
+                        raise
+                    continue
+                except Exception as e:
+                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                        errors.append(f"Failed to load CSV with encoding {encoding}: {str(e)}")
+                        raise
+                    continue
+
+            if not loader or not successful_encoding:
+                raise Exception("Could not find a suitable encoding for the CSV file")
+
+            print(f"✓ Successfully loaded CSV with {successful_encoding} encoding")
+
             # Process documents in batches
             async for batch_result in self._process_csv_in_batches(loader):
                 total_records += batch_result["total"]
                 successful_records += batch_result["successful"]
                 failed_records += batch_result["failed"]
                 errors.extend(batch_result["errors"])
-                
+
         except Exception as e:
             errors.append(f"Failed to process CSV file: {str(e)}")
             failed_records = total_records if total_records > 0 else 1
-        
+
         return ProcessingResult(
             total_records=total_records,
             successful_records=successful_records,
@@ -72,19 +158,19 @@ class CSVProcessorService:
     
     async def process_csv_string(self, csv_content: str) -> ProcessingResult:
         """
-        Process CSV content from a string.
-        
+        Process CSV content from a string with proper Unicode handling.
+
         Args:
             csv_content: CSV content as string
-            
+
         Returns:
             ProcessingResult: Summary of processing results
         """
-        # Create temporary file for CSV content
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as temp_file:
+        # Create temporary file for CSV content with UTF-8 encoding
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as temp_file:
             temp_file.write(csv_content)
             temp_file_path = temp_file.name
-        
+
         try:
             result = await self.process_csv_file(temp_file_path)
             return result
