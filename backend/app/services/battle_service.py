@@ -11,6 +11,7 @@ from app.db.repositories.battle_repo import battle_repository
 from app.models.battle import BattleCreate, BattleResponse
 from app.models.judgment import JudgmentCreate
 from app.models.verse import Verse
+from app.services.data_cache_service import RapperCacheData
 
 
 class BattleService:
@@ -57,6 +58,9 @@ class BattleService:
         # Track previous verses for context
         previous_verses = []
 
+        # Track cached data across rounds to avoid redundant API calls
+        cached_data = None
+
         try:
             # Continue until battle is completed (a rapper wins 2 rounds or all 3 rounds are done)
             while battle.status != "completed":
@@ -80,8 +84,13 @@ class BattleService:
                         style1=battle.style1,
                         style2=battle.style2,
                         round_number=battle.current_round,
-                        previous_verses=previous_verses if previous_verses else None
+                        previous_verses=previous_verses if previous_verses else None,
+                        cached_data=cached_data
                     )
+
+                    # Update cached data for subsequent rounds
+                    if "cached_data" in round_result and round_result["cached_data"]:
+                        cached_data = round_result["cached_data"]
 
                     # Extract verses and judgment from the result
                     verse1_content = None
@@ -309,7 +318,8 @@ Winner: {winner}
             opponent_name=opponent_name,
             style=style,
             round_number=battle.current_round,
-            previous_verses=previous_verses if previous_verses else None
+            previous_verses=previous_verses if previous_verses else None,
+            cached_data=None  # Individual verse generation doesn't use cached data
         )
 
         # Create the verse
@@ -375,7 +385,8 @@ Winner: {winner}
                     style1=battle.style1,
                     style2=battle.style2,
                     round_number=battle.current_round,
-                    previous_verses=None
+                    previous_verses=None,
+                    cached_data=None  # First round, no cached data yet
                 )
 
                 # Extract verses from the result
@@ -539,7 +550,8 @@ This battle is mine, I'll win tonight."""
                                 style1=battle.style1,
                                 style2=battle.style2,
                                 round_number=new_round.round_number,
-                                previous_verses=previous_verses if previous_verses else None
+                                previous_verses=previous_verses if previous_verses else None,
+                                cached_data=None  # Subsequent rounds in judge_round don't use cached data
                             )
 
                             # Extract verses from the result
@@ -654,7 +666,8 @@ This battle is mine, I'll win tonight."""
                 style1=battle.style1,
                 style2=battle.style2,
                 round_number=current_round.round_number,
-                previous_verses=previous_verses
+                previous_verses=previous_verses,
+                cached_data=None  # Judgment doesn't need cached data
             )
 
             # Extract judgment from the result
@@ -727,7 +740,8 @@ Winner: {winner}
                             opponent_name=battle.rapper2_name,
                             style=battle.style1,
                             round_number=new_round.round_number,
-                            previous_verses=previous_verses if previous_verses else None
+                            previous_verses=previous_verses if previous_verses else None,
+                            cached_data=None  # Individual verse generation doesn't use cached data
                         )
                     except Exception as e:
                         # If there's an error, use a default verse
@@ -762,7 +776,8 @@ Watch me shine while your flow flops."""
                             opponent_name=battle.rapper1_name,
                             style=battle.style2,
                             round_number=new_round.round_number,
-                            previous_verses=previous_verses
+                            previous_verses=previous_verses,
+                            cached_data=None  # Individual verse generation doesn't use cached data
                         )
                     except Exception as e:
                         # If there's an error, use a default verse

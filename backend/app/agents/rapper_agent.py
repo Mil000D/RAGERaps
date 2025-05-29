@@ -10,6 +10,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
+from app.services.data_cache_service import data_cache_service, RapperCacheData
 
 
 class RapperState(TypedDict):
@@ -20,6 +21,9 @@ class RapperState(TypedDict):
     opponent_name: str
     style: str
     context: Optional[Dict]
+    cached_data: Optional[Dict[str, RapperCacheData]]
+    round_number: int
+    is_first_round: bool
 
 
 class RapperAgent:
@@ -145,13 +149,134 @@ class RapperAgent:
         # Compile the graph
         return graph_builder.compile()
 
+    async def _get_or_fetch_rapper_data(
+        self,
+        rapper_name: str,
+        opponent_name: str,
+        style: str,
+        is_first_round: bool,
+        cached_data: Optional[Dict[str, RapperCacheData]] = None
+    ) -> Dict[str, RapperCacheData]:
+        """
+        Get or fetch rapper data, using cache when available.
+
+        Args:
+            rapper_name: Name of the rapper
+            opponent_name: Name of the opponent
+            style: Rap style
+            is_first_round: Whether this is the first round
+            cached_data: Existing cached data
+
+        Returns:
+            Dict[str, RapperCacheData]: Cached data for both rappers
+        """
+        result_cache = cached_data or {}
+
+        # If not first round and we have cached data, return it
+        if not is_first_round and cached_data:
+            return result_cache
+
+        # For first round, fetch data if not already cached
+        for name in [rapper_name, opponent_name]:
+            cache_key = name.lower().strip()
+
+            # Check if we already have cached data for this rapper
+            if cache_key in result_cache:
+                continue
+
+            # Try to get from cache service
+            cached_rapper_data = await data_cache_service.get_rapper_data(name)
+
+            if cached_rapper_data:
+                result_cache[cache_key] = cached_rapper_data
+            else:
+                # Need to fetch data using MCP tools
+                if is_first_round and self.mcp_tools:
+                    rapper_data = await self._fetch_rapper_data_with_tools(name)
+                    result_cache[cache_key] = rapper_data
+
+                    # Cache the data for future use
+                    await data_cache_service.cache_rapper_data(
+                        rapper_name=name,
+                        biographical_info=rapper_data.biographical_info,
+                        wikipedia_info=rapper_data.wikipedia_info,
+                        internet_search_info=rapper_data.internet_search_info,
+                        style_info=rapper_data.style_info
+                    )
+                else:
+                    # Create empty cache data if no tools available
+                    result_cache[cache_key] = RapperCacheData(rapper_name=name)
+
+        return result_cache
+
+    async def _fetch_rapper_data_with_tools(self, rapper_name: str) -> RapperCacheData:
+        """
+        Fetch rapper data using MCP tools.
+
+        Args:
+            rapper_name: Name of the rapper
+
+        Returns:
+            RapperCacheData: Fetched data
+        """
+        rapper_data = RapperCacheData(rapper_name=rapper_name)
+
+        try:
+            # Try to find the search tools
+            wikipedia_tool = None
+            rapper_wikipedia_tool = None
+            internet_tool = None
+            rapper_info_tool = None
+
+            for tool in self.mcp_tools:
+                tool_name = getattr(tool, 'name', '')
+                if tool_name == 'search_wikipedia':
+                    wikipedia_tool = tool
+                elif tool_name == 'search_rapper_wikipedia':
+                    rapper_wikipedia_tool = tool
+                elif tool_name == 'search_internet':
+                    internet_tool = tool
+                elif tool_name == 'search_rapper_info':
+                    rapper_info_tool = tool
+
+            # Fetch Wikipedia information
+            if rapper_wikipedia_tool:
+                try:
+                    wikipedia_result = await rapper_wikipedia_tool.ainvoke({"rapper_name": rapper_name})
+                    rapper_data.wikipedia_info = str(wikipedia_result)
+                except Exception as e:
+                    print(f"Error fetching Wikipedia data for {rapper_name}: {e}")
+
+            # Fetch internet search information
+            if rapper_info_tool:
+                try:
+                    internet_result = await rapper_info_tool.ainvoke({"rapper_name": rapper_name})
+                    rapper_data.internet_search_info = str(internet_result)
+                except Exception as e:
+                    print(f"Error fetching internet data for {rapper_name}: {e}")
+
+            # Combine biographical info
+            bio_parts = []
+            if rapper_data.wikipedia_info:
+                bio_parts.append(f"Wikipedia: {rapper_data.wikipedia_info}")
+            if rapper_data.internet_search_info:
+                bio_parts.append(f"Internet: {rapper_data.internet_search_info}")
+
+            rapper_data.biographical_info = "\n\n".join(bio_parts) if bio_parts else None
+
+        except Exception as e:
+            print(f"Error fetching data for {rapper_name}: {e}")
+
+        return rapper_data
+
     async def generate_verse(
         self,
         rapper_name: str,
         opponent_name: str,
         style: str,
         round_number: int,
-        previous_verses: Optional[List[Dict]] = None
+        previous_verses: Optional[List[Dict]] = None,
+        cached_data: Optional[Dict[str, RapperCacheData]] = None
     ) -> str:
         """
         Generate a rap verse.
@@ -162,6 +287,7 @@ class RapperAgent:
             style: Rap style
             round_number: Current round number
             previous_verses: Previous verses in the battle
+            cached_data: Cached data for rappers (used to avoid redundant API calls)
 
         Returns:
             str: Generated verse
@@ -173,9 +299,21 @@ class RapperAgent:
                 # Create the graph with whatever tools we have available
                 self.graph = self._create_graph()
 
-            # Create the system message
+            # Determine if this is the first round
+            is_first_round = round_number == 1
+
+            # Get or fetch rapper data using cache
+            rapper_cache_data = await self._get_or_fetch_rapper_data(
+                rapper_name=rapper_name,
+                opponent_name=opponent_name,
+                style=style,
+                is_first_round=is_first_round,
+                cached_data=cached_data
+            )
+
+            # Create the system message with cached data
             system_message = self._create_system_message(
-                rapper_name, opponent_name, style, round_number, previous_verses
+                rapper_name, opponent_name, style, round_number, previous_verses, rapper_cache_data
             )
 
             # Create the human message
@@ -189,7 +327,10 @@ class RapperAgent:
                 "rapper_name": rapper_name,
                 "opponent_name": opponent_name,
                 "style": style,
-                "context": None
+                "context": None,
+                "cached_data": rapper_cache_data,
+                "round_number": round_number,
+                "is_first_round": is_first_round
             }
 
             # Run the graph
@@ -209,7 +350,8 @@ class RapperAgent:
         opponent_name: str,
         style: str,
         round_number: int,
-        previous_verses: Optional[List[Dict]] = None
+        previous_verses: Optional[List[Dict]] = None,
+        cached_data: Optional[Dict[str, RapperCacheData]] = None
     ) -> SystemMessage:
         """
         Create a system message for the rapper agent.
@@ -220,6 +362,7 @@ class RapperAgent:
             style: Rap style
             round_number: Current round number
             previous_verses: Previous verses in the battle
+            cached_data: Cached data for rappers
 
         Returns:
             SystemMessage: The created system message
@@ -229,19 +372,32 @@ class RapperAgent:
 Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
 
 Follow these guidelines:
-1. Research {rapper_name} style, background, and facts using the available search tools.
+1. Create a verse that incorporates elements of {style} and {rapper_name}'s persona
+2. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career mistakes, controversies, or personal details.
+3. Reference at least 2-3 specific biographical details about {opponent_name} in your disses.
+4. Reference at least 2-3 specific facts about {rapper_name}'s life, career, or personal details to support your verse.
+5. Make your disses clever, creative, and authentic to {style} rap style.
+6. Keep the verse between 12-16 lines to allow room for detailed disses.
+"""
+
+        # Add cached biographical information if available
+        if cached_data:
+            rapper_key = rapper_name.lower().strip()
+            opponent_key = opponent_name.lower().strip()
+
+            if rapper_key in cached_data and cached_data[rapper_key].biographical_info:
+                system_content += f"\n\nInformation about {rapper_name}:\n{cached_data[rapper_key].biographical_info}\n"
+
+            if opponent_key in cached_data and cached_data[opponent_key].biographical_info:
+                system_content += f"\nInformation about {opponent_name}:\n{cached_data[opponent_key].biographical_info}\n"
+        else:
+            # Fallback for first round when tools might be needed
+            system_content += f"""
+7. If this is the first round, research {rapper_name} style, background, and facts using the available search tools.
    Use any of these tools if they are available:
    - search_internet or search_wikipedia for general information
    - search_rapper_info or search_rapper_wikipedia specifically for rapper information
-   - search for general web searches
-2. Research the {style} rap style using the style tools (get_style, search_styles)
-3. Create a verse that incorporates elements of {style} and {rapper_name}'s persona
-4. IMPORTANT: Research {opponent_name}'s biography, career, and personal life using search tools.
-5. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career mistakes, controversies, or personal details.
-6. Reference at least 2-3 specific biographical details about {opponent_name} in your disses.
-7. Reference at least 2-3 specific facts about {rapper_name}'s life, career, or personal details to support your verse.
-8. Make your disses clever, creative, and authentic to {style} rap style.
-9. Keep the verse between 12-16 lines to allow room for detailed disses.
+8. If this is the first round, research {opponent_name}'s biography, career, and personal life using search tools.
 """
 
         # Add common ending

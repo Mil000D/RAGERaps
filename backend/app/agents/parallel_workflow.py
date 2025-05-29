@@ -8,6 +8,7 @@ from langgraph.graph import END, StateGraph
 
 from app.agents.judge_agent import judge_agent
 from app.agents.rapper_agent import rapper_agent
+from app.services.data_cache_service import RapperCacheData
 
 
 class RapperVerseState(TypedDict):
@@ -32,6 +33,7 @@ class BattleRoundState(TypedDict):
     # Use operator.add to combine results from parallel execution
     verses: Annotated[List[Dict], operator.add]
     judgment: Optional[Dict]
+    cached_data: Optional[Dict[str, RapperCacheData]]
 
 
 async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
@@ -42,7 +44,8 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
             opponent_name=state["rapper2_name"],
             style=state["style1"],
             round_number=state["round_number"],
-            previous_verses=state["previous_verses"]
+            previous_verses=state["previous_verses"],
+            cached_data=state.get("cached_data")
         )
     except Exception:
         # If there's an error, use a default verse
@@ -75,7 +78,8 @@ async def rapper2_verse_node(state: BattleRoundState) -> BattleRoundState:
             opponent_name=state["rapper1_name"],
             style=state["style2"],
             round_number=state["round_number"],
-            previous_verses=state["previous_verses"]
+            previous_verses=state["previous_verses"],
+            cached_data=state.get("cached_data")
         )
     except Exception:
         # If there's an error, use a default verse
@@ -199,7 +203,8 @@ async def execute_battle_round_parallel(
     style1: str,
     style2: str,
     round_number: int,
-    previous_verses: Optional[List[Dict]] = None
+    previous_verses: Optional[List[Dict]] = None,
+    cached_data: Optional[Dict[str, RapperCacheData]] = None
 ) -> Dict:
     """
     Execute a battle round with parallel agent execution.
@@ -212,6 +217,7 @@ async def execute_battle_round_parallel(
         style2: Style of the second rapper
         round_number: Round number
         previous_verses: Previous verses for context
+        cached_data: Cached data for rappers to avoid redundant API calls
 
     Returns:
         Dict: The final state with verses and judgment
@@ -226,11 +232,16 @@ async def execute_battle_round_parallel(
         "round_number": round_number,
         "previous_verses": previous_verses,
         "verses": [],
-        "judgment": None
+        "judgment": None,
+        "cached_data": cached_data
     }
 
     # Execute the graph
     # Use the ainvoke method for asynchronous execution
     final_state = await battle_round_graph.ainvoke(initial_state)
+
+    # Ensure cached data is preserved in the final state
+    if cached_data and "cached_data" not in final_state:
+        final_state["cached_data"] = cached_data
 
     return final_state
