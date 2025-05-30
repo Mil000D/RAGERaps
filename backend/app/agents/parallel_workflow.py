@@ -1,5 +1,5 @@
 """
-Parallel execution workflow for rap battle agents using LangGraph.
+Parallel execution workflow for rap battle agents using LangGraph with tool-based RAG integration.
 """
 from typing import Annotated, Dict, List, Optional, TypedDict
 import operator
@@ -159,10 +159,10 @@ Winner: {winner}
 
 def create_battle_round_graph() -> StateGraph:
     """
-    Create a StateGraph for parallel execution of a battle round.
+    Create a StateGraph for parallel execution of a battle round with tool-based RAG integration.
 
-    This graph executes the rapper verse generation in parallel and then
-    judges the round once both verses are available.
+    This graph executes the rapper verse generation in parallel (with each agent able to use
+    retrieval tools), and then judges the round once both verses are available.
 
     Returns:
         StateGraph: The compiled graph for battle round execution
@@ -207,7 +207,7 @@ async def execute_battle_round_parallel(
     cached_data: Optional[Dict[str, RapperCacheData]] = None
 ) -> Dict:
     """
-    Execute a battle round with parallel agent execution.
+    Execute a battle round with parallel agent execution and tool-based RAG integration.
 
     Args:
         round_id: ID of the round

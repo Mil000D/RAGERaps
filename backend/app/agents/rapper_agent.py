@@ -11,6 +11,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
 from app.services.data_cache_service import data_cache_service, RapperCacheData
+from app.tools.artist_retrieval_tool import artist_retrieval_tool
 
 
 class RapperState(TypedDict):
@@ -39,8 +40,8 @@ class RapperAgent:
             streaming=False
         )
 
-        # Initialize tools
-        self.tools = []
+        # Initialize tools with artist retrieval tool
+        self.tools = [artist_retrieval_tool]
 
         # # Add style tools
         # self.tools.extend([
@@ -279,7 +280,7 @@ class RapperAgent:
         cached_data: Optional[Dict[str, RapperCacheData]] = None
     ) -> str:
         """
-        Generate a rap verse.
+        Generate a rap verse using available tools for artist data retrieval.
 
         Args:
             rapper_name: Name of the rapper
@@ -367,17 +368,22 @@ class RapperAgent:
         Returns:
             SystemMessage: The created system message
         """
-        # Create system content with biographical attack instructions as a standard feature
+        # Create system content with tool usage instructions
         system_content = f"""You are {rapper_name}, a skilled rapper in a rap battle against {opponent_name}.
 Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
 
+IMPORTANT: Use the retrieve_artist_data tool to get authentic lyrical content and style information:
+- First, retrieve data for yourself ({rapper_name}) to understand your authentic style and lyrical patterns
+- Then, retrieve data for your opponent ({opponent_name}) to craft specific, fact-based disses
+- Use the retrieved lyrics as inspiration for flow, wordplay, and style authenticity
+
 Follow these guidelines:
-1. Create a verse that incorporates elements of {style} and {rapper_name}'s persona
-2. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career mistakes, controversies, or personal details.
-3. Reference at least 2-3 specific biographical details about {opponent_name} in your disses.
-4. Reference at least 2-3 specific facts about {rapper_name}'s life, career, or personal details to support your verse.
-5. Make your disses clever, creative, and authentic to {style} rap style.
-6. Keep the verse between 12-16 lines to allow room for detailed disses.
+1. Create a verse that incorporates authentic elements of {style} and {rapper_name}'s actual lyrical style
+2. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career, or lyrical content
+3. Reference actual lyrical patterns, themes, or characteristics from the retrieved data
+4. Make your disses clever, creative, and authentic to {style} rap style
+5. Keep the verse between 12-16 lines to allow room for detailed, fact-based content
+6. Use the complete lyrics from the database to inspire authentic flow and wordplay patterns
 """
 
         # Add cached biographical information if available
@@ -386,10 +392,10 @@ Follow these guidelines:
             opponent_key = opponent_name.lower().strip()
 
             if rapper_key in cached_data and cached_data[rapper_key].biographical_info:
-                system_content += f"\n\nInformation about {rapper_name}:\n{cached_data[rapper_key].biographical_info}\n"
+                system_content += f"\n\nBiographical information about {rapper_name}:\n{cached_data[rapper_key].biographical_info}\n"
 
             if opponent_key in cached_data and cached_data[opponent_key].biographical_info:
-                system_content += f"\nInformation about {opponent_name}:\n{cached_data[opponent_key].biographical_info}\n"
+                system_content += f"\nBiographical information about {opponent_name}:\n{cached_data[opponent_key].biographical_info}\n"
         else:
             # Fallback for first round when tools might be needed
             system_content += f"""

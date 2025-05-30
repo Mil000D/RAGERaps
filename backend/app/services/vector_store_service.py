@@ -149,61 +149,74 @@ class VectorStoreService:
         return doc_ids
     
     async def search_artists(
-        self, 
-        query: str, 
+        self,
+        query: str,
         k: int = 5,
         filter_dict: Optional[Dict[str, Any]] = None
     ) -> List[Document]:
         """
         Search for artists using semantic similarity.
-        
+
         Args:
             query: Search query
             k: Number of results to return
-            filter_dict: Optional metadata filters
-            
+            filter_dict: Optional metadata filters (e.g., {"artist": "Eminem"})
+
         Returns:
             List[Document]: Search results with lyrics in metadata
         """
         vector_store = await self.get_vector_store()
-        
+
+        # Convert filter_dict to Qdrant filter format if provided
+        qdrant_filter = None
+        if filter_dict:
+            # For LangChain Qdrant integration, use the simple dict format
+            # The integration will handle conversion to Qdrant's Filter format
+            qdrant_filter = filter_dict
+
         # Perform similarity search
         results = await asyncio.to_thread(
             vector_store.similarity_search,
             query=query,
             k=k,
-            filter=filter_dict
+            filter=qdrant_filter
         )
-        
+
         return results
     
     async def search_artists_with_scores(
-        self, 
-        query: str, 
+        self,
+        query: str,
         k: int = 5,
         filter_dict: Optional[Dict[str, Any]] = None
     ) -> List[tuple[Document, float]]:
         """
         Search for artists with similarity scores.
-        
+
         Args:
             query: Search query
             k: Number of results to return
-            filter_dict: Optional metadata filters
-            
+            filter_dict: Optional metadata filters (e.g., {"artist": "Eminem"})
+
         Returns:
             List[tuple[Document, float]]: Search results with scores
         """
         vector_store = await self.get_vector_store()
-        
+
+        # Convert filter_dict to Qdrant filter format if provided
+        qdrant_filter = None
+        if filter_dict:
+            # For LangChain Qdrant integration, use the simple dict format
+            qdrant_filter = filter_dict
+
         # Perform similarity search with scores
         results = await asyncio.to_thread(
             vector_store.similarity_search_with_score,
             query=query,
             k=k,
-            filter=filter_dict
+            filter=qdrant_filter
         )
-        
+
         return results
     
     async def delete_artist_data(self, doc_ids: List[str]) -> None:
