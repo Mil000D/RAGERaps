@@ -3,7 +3,7 @@ Artist retrieval tool for accessing vector store data during agent execution.
 """
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Type
 from pydantic import BaseModel, Field
 
 from langchain_core.tools import BaseTool
@@ -24,21 +24,21 @@ class ArtistRetrievalInput(BaseModel):
 
 class ArtistRetrievalTool(BaseTool):
     """Tool for retrieving artist lyrics and style information from the vector store."""
-    
+
     name: str = "retrieve_artist_data"
     description: str = """Retrieve lyrics and style information for a specific artist from the vector database.
-    
+
     This tool searches the artists_lyrics collection for:
     - Complete lyrics content from the specified artist
     - Style characteristics and genre information
     - Similar artists' examples if the specific artist has limited data
-    
+
     Use this when you need authentic lyrical content, style examples, or genre information
     to generate more accurate and style-appropriate rap verses or make informed judgments.
-    
+
     Input should include the artist name and optionally the style/genre to focus on."""
-    
-    args_schema = ArtistRetrievalInput
+
+    args_schema: Type[BaseModel] = ArtistRetrievalInput
     
     async def _arun(self, artist_name: str, style: Optional[str] = None, k: Optional[int] = 5, include_similar: Optional[bool] = True) -> str:
         """
