@@ -6,19 +6,8 @@ import operator
 
 from langgraph.graph import END, StateGraph
 
-from app.agents.judge_agent import judge_agent
 from app.agents.rapper_agent import rapper_agent
 from app.services.data_cache_service import RapperCacheData
-
-
-class RapperVerseState(TypedDict):
-    """State for a rapper's verse generation."""
-    rapper_name: str
-    opponent_name: str
-    style: str
-    round_number: int
-    previous_verses: Optional[List[Dict]]
-    verse_content: Optional[str]
 
 
 class BattleRoundState(TypedDict):
@@ -32,7 +21,6 @@ class BattleRoundState(TypedDict):
     previous_verses: Optional[List[Dict]]
     # Use operator.add to combine results from parallel execution
     verses: Annotated[List[Dict], operator.add]
-    judgment: Optional[Dict]
     cached_data: Optional[Dict[str, RapperCacheData]]
 
 
@@ -104,57 +92,8 @@ This battle is mine, I'll win tonight."""
     }
 
 
-async def judge_round_node(state: BattleRoundState) -> BattleRoundState:
-    """Judge the round based on both verses."""
-    # Extract verses for both rappers
-    rapper1_verse = None
-    rapper2_verse = None
-
-    for verse in state["verses"]:
-        if verse["rapper_name"] == state["rapper1_name"]:
-            rapper1_verse = verse["content"]
-        elif verse["rapper_name"] == state["rapper2_name"]:
-            rapper2_verse = verse["content"]
-
-    # Ensure we have both verses
-    if not rapper1_verse or not rapper2_verse:
-        raise ValueError("Missing verses for judgment")
-
-    try:
-        # Judge the round
-        winner, feedback = await judge_agent.judge_round(
-            rapper1_name=state["rapper1_name"],
-            rapper1_verse=rapper1_verse,
-            rapper1_style=state["style1"],
-            rapper2_name=state["rapper2_name"],
-            rapper2_verse=rapper2_verse,
-            rapper2_style=state["style2"]
-        )
-    except Exception:
-        # If there's an error, use a default judgment
-        import random
-        winner = state["rapper1_name"] if random.random() < 0.5 else state["rapper2_name"]
-        feedback = f"""
-Analysis of {state["rapper1_name"]}'s verse:
-{state["rapper1_name"]} delivered a verse with interesting wordplay and flow.
-
-Analysis of {state["rapper2_name"]}'s verse:
-{state["rapper2_name"]} showed creativity and technical skill in their delivery.
-
-Comparison:
-Both rappers showed skill, but {winner} had slightly better delivery and impact.
-
-Winner: {winner}
-{winner} wins this round with a more impressive overall performance.
-"""
-
-    # Return the judgment
-    return {
-        "judgment": {
-            "winner": winner,
-            "feedback": feedback
-        }
-    }
+# Removed judge_round_node - battles now end after verse generation
+# Users can manually judge rounds using the API endpoints
 
 
 def create_battle_round_graph() -> StateGraph:
@@ -162,7 +101,7 @@ def create_battle_round_graph() -> StateGraph:
     Create a StateGraph for parallel execution of a battle round with tool-based RAG integration.
 
     This graph executes the rapper verse generation in parallel (with each agent able to use
-    retrieval tools), and then judges the round once both verses are available.
+    retrieval tools), and then ends. Users can manually judge rounds using the API endpoints.
 
     Returns:
         StateGraph: The compiled graph for battle round execution
@@ -170,23 +109,18 @@ def create_battle_round_graph() -> StateGraph:
     # Create the graph
     graph = StateGraph(BattleRoundState)
 
-    # Add nodes
+    # Add nodes for verse generation only
     graph.add_node("rapper1_verse", rapper1_verse_node)
     graph.add_node("rapper2_verse", rapper2_verse_node)
-    graph.add_node("judge_round", judge_round_node)
 
     # Set up parallel execution of rapper verse generation
     # Both rapper1_verse and rapper2_verse run in parallel from the START node
     graph.set_entry_point("rapper1_verse")
     graph.set_entry_point("rapper2_verse")
 
-    # Add edges from both rapper nodes to the judge node
-    # The judge node will only execute when both rapper nodes have completed
-    graph.add_edge("rapper1_verse", "judge_round")
-    graph.add_edge("rapper2_verse", "judge_round")
-
-    # Add edge from judge to END
-    graph.add_edge("judge_round", END)
+    # Both rapper nodes end directly (no automatic judging)
+    graph.add_edge("rapper1_verse", END)
+    graph.add_edge("rapper2_verse", END)
 
     # Compile the graph
     return graph.compile()
@@ -209,6 +143,9 @@ async def execute_battle_round_parallel(
     """
     Execute a battle round with parallel agent execution and tool-based RAG integration.
 
+    This function generates verses for both rappers in parallel but does not automatically
+    judge the round. Users can manually judge rounds using the API endpoints.
+
     Args:
         round_id: ID of the round
         rapper1_name: Name of the first rapper
@@ -220,7 +157,7 @@ async def execute_battle_round_parallel(
         cached_data: Cached data for rappers to avoid redundant API calls
 
     Returns:
-        Dict: The final state with verses and judgment
+        Dict: The final state with verses (no automatic judgment)
     """
     # Initialize the state
     initial_state = {
@@ -232,7 +169,6 @@ async def execute_battle_round_parallel(
         "round_number": round_number,
         "previous_verses": previous_verses,
         "verses": [],
-        "judgment": None,
         "cached_data": cached_data
     }
 

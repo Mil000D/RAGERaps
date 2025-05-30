@@ -9,7 +9,7 @@ from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import Distance, VectorParams, Filter, FieldCondition, MatchValue
 
 from app.core.config import settings
 from app.models.artist import ArtistData
@@ -62,7 +62,33 @@ class VectorStoreService:
             )
         
         return self._vector_store
-    
+
+    def _convert_dict_filter_to_qdrant_filter(self, filter_dict: Dict[str, Any]) -> Filter:
+        """
+        Convert a dictionary filter to Qdrant Filter format.
+
+        Args:
+            filter_dict: Dictionary filter (e.g., {"artist": "Eminem"})
+
+        Returns:
+            Filter: Qdrant Filter object
+        """
+        conditions = []
+
+        for key, value in filter_dict.items():
+            # Create a field condition for exact match
+            condition = FieldCondition(
+                key=key,
+                match=MatchValue(value=value)
+            )
+            conditions.append(condition)
+
+        # If multiple conditions, combine with AND logic
+        if len(conditions) == 1:
+            return Filter(must=[conditions[0]])
+        else:
+            return Filter(must=conditions)
+
     async def _ensure_artists_collection_exists(self) -> None:
         """Ensure the artists collection exists in Qdrant."""
         client = self.get_client()
@@ -170,9 +196,7 @@ class VectorStoreService:
         # Convert filter_dict to Qdrant filter format if provided
         qdrant_filter = None
         if filter_dict:
-            # For LangChain Qdrant integration, use the simple dict format
-            # The integration will handle conversion to Qdrant's Filter format
-            qdrant_filter = filter_dict
+            qdrant_filter = self._convert_dict_filter_to_qdrant_filter(filter_dict)
 
         # Perform similarity search
         results = await asyncio.to_thread(
@@ -206,8 +230,7 @@ class VectorStoreService:
         # Convert filter_dict to Qdrant filter format if provided
         qdrant_filter = None
         if filter_dict:
-            # For LangChain Qdrant integration, use the simple dict format
-            qdrant_filter = filter_dict
+            qdrant_filter = self._convert_dict_filter_to_qdrant_filter(filter_dict)
 
         # Perform similarity search with scores
         results = await asyncio.to_thread(
