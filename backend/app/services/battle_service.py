@@ -12,6 +12,7 @@ from app.models.battle import BattleCreate, BattleResponse
 from app.models.judgment import JudgmentCreate
 from app.models.verse import Verse
 from app.services.data_cache_service import RapperCacheData
+from app.services.prompt_service import prompt_service
 
 
 class BattleService:
@@ -141,15 +142,13 @@ class BattleService:
                 except Exception as e:
                     # If there's an error, use default verses and judgment
                     # First rapper with style1
-                    verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {battle.current_round}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                    verse1_content = prompt_service.get_fallback_verse(
+                        "rapper1",
+                        rapper_name=battle.rapper1_name,
+                        opponent_name=battle.rapper2_name,
+                        round_number=battle.current_round,
+                        style=battle.style1
+                    )
 
                     verse1 = Verse(
                         round_id=current_round.id,
@@ -160,15 +159,13 @@ Watch me shine while your flow flops."""
                     await battle_repository.add_verse(current_round.id, verse1)
 
                     # Second rapper with style2
-                    verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {battle.current_round}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                    verse2_content = prompt_service.get_fallback_verse(
+                        "rapper2",
+                        rapper_name=battle.rapper2_name,
+                        opponent_name=battle.rapper1_name,
+                        round_number=battle.current_round,
+                        style=battle.style2
+                    )
 
                     verse2 = Verse(
                         round_id=current_round.id,
@@ -379,15 +376,13 @@ This battle is mine, I'll win tonight."""
             except Exception as e:
                 # If there's an error, use default verses
                 # First rapper with style1
-                verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {battle.current_round}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                verse1_content = prompt_service.get_fallback_verse(
+                    "rapper1",
+                    rapper_name=battle.rapper1_name,
+                    opponent_name=battle.rapper2_name,
+                    round_number=battle.current_round,
+                    style=battle.style1
+                )
 
                 verse1 = Verse(
                     round_id=current_round.id,
@@ -398,15 +393,13 @@ Watch me shine while your flow flops."""
                 await battle_repository.add_verse(current_round.id, verse1)
 
                 # Second rapper with style2
-                verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {battle.current_round}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                verse2_content = prompt_service.get_fallback_verse(
+                    "rapper2",
+                    rapper_name=battle.rapper2_name,
+                    opponent_name=battle.rapper1_name,
+                    round_number=battle.current_round,
+                    style=battle.style2
+                )
 
                 verse2 = Verse(
                     round_id=current_round.id,
@@ -544,15 +537,13 @@ This battle is mine, I'll win tonight."""
                         except Exception as e:
                             # If there's an error, use default verses
                             # First rapper
-                            verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {new_round.round_number}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                            verse1_content = prompt_service.get_fallback_verse(
+                                "rapper1",
+                                rapper_name=battle.rapper1_name,
+                                opponent_name=battle.rapper2_name,
+                                round_number=new_round.round_number,
+                                style=battle.style1
+                            )
 
                             verse1 = Verse(
                                 round_id=new_round.id,
@@ -563,15 +554,13 @@ Watch me shine while your flow flops."""
                             await battle_repository.add_verse(new_round.id, verse1)
 
                             # Second rapper
-                            verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {new_round.round_number}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                            verse2_content = prompt_service.get_fallback_verse(
+                                "rapper2",
+                                rapper_name=battle.rapper2_name,
+                                opponent_name=battle.rapper1_name,
+                                round_number=new_round.round_number,
+                                style=battle.style2
+                            )
 
                             verse2 = Verse(
                                 round_id=new_round.id,
@@ -638,19 +627,11 @@ This battle is mine, I'll win tonight."""
             # If there's an error, use a default judgment
             import random
             winner = battle.rapper1_name if random.random() < 0.5 else battle.rapper2_name
-            feedback = f"""
-Analysis of {battle.rapper1_name}'s verse:
-{battle.rapper1_name} delivered a verse with interesting wordplay and flow.
-
-Analysis of {battle.rapper2_name}'s verse:
-{battle.rapper2_name} showed creativity and technical skill in their delivery.
-
-Comparison:
-Both rappers showed skill, but {winner} had slightly better delivery and impact.
-
-Winner: {winner}
-{winner} wins this round with a more impressive overall performance.
-"""
+            feedback = prompt_service.get_default_judgment(
+                rapper1_name=battle.rapper1_name,
+                rapper2_name=battle.rapper2_name,
+                winner=winner
+            )
 
         # Create the judgment
         judgment = JudgmentCreate(
@@ -705,15 +686,13 @@ Winner: {winner}
                         )
                     except Exception as e:
                         # If there's an error, use a default verse
-                        verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {new_round.round_number}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                        verse1_content = prompt_service.get_fallback_verse(
+                            "rapper1",
+                            rapper_name=battle.rapper1_name,
+                            opponent_name=battle.rapper2_name,
+                            round_number=new_round.round_number,
+                            style=battle.style1
+                        )
 
                     verse1 = Verse(
                         round_id=new_round.id,
@@ -741,15 +720,13 @@ Watch me shine while your flow flops."""
                         )
                     except Exception as e:
                         # If there's an error, use a default verse
-                        verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {new_round.round_number}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                        verse2_content = prompt_service.get_fallback_verse(
+                            "rapper2",
+                            rapper_name=battle.rapper2_name,
+                            opponent_name=battle.rapper1_name,
+                            round_number=new_round.round_number,
+                            style=battle.style2
+                        )
 
                     verse2 = Verse(
                         round_id=new_round.id,

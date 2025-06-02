@@ -37,15 +37,7 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
         )
     except Exception:
         # If there's an error, use a default verse
-        verse_content = f"""Yo, I'm {state["rapper1_name"]}, stepping to the mic,
-Facing off with {state["rapper2_name"]}, gonna win this fight.
-Round {state["round_number"]}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {state["style1"]} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+        verse_content = "Error generating verse."
 
     # Return the verse in the format expected by the verses list
     return {
@@ -71,15 +63,8 @@ async def rapper2_verse_node(state: BattleRoundState) -> BattleRoundState:
         )
     except Exception:
         # If there's an error, use a default verse
-        verse_content = f"""I'm {state["rapper2_name"]}, the best in the game,
-After this battle, nothing will be the same.
-{state["rapper1_name"]} thinks they can step to me?
-But my {state["style2"]} skills are legendary.
+        verse_content = "Error generating verse."
 
-Round {state["round_number"]}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
 
     # Return the verse in the format expected by the verses list
     return {

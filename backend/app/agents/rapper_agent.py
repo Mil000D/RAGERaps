@@ -1,16 +1,18 @@
 """
 Rapper agent implementation using LangGraph.
 """
+
 from typing import Annotated, Dict, List, Optional, TypedDict
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
-from app.services.data_cache_service import data_cache_service, RapperCacheData
+from app.services.data_cache_service import RapperCacheData, data_cache_service
+from app.services.prompt_service import prompt_service
 from app.tools.artist_retrieval_tool import artist_retrieval_tool
 
 
@@ -37,7 +39,7 @@ class RapperAgent:
             model="gpt-4o-mini",
             temperature=0.7,
             api_key=settings.openai_api_key,
-            streaming=False
+            streaming=False,
         )
 
         # Initialize tools with artist retrieval tool
@@ -115,15 +117,17 @@ class RapperAgent:
         Returns:
             StateGraph: The created graph
         """
+
         # Define the nodes
         def rapper_node(state: RapperState):
             """Process the state and generate a response."""
             # Generate a response
             response = self.llm_with_tools.invoke(state["messages"])
 
+            # Return the response - LangGraph will handle tool call routing
             return {"messages": [response]}
 
-        # Create the tool node
+        # Create the tool node with all available tools
         tool_node = ToolNode(tools=self.tools)
 
         # Create the graph
@@ -133,15 +137,17 @@ class RapperAgent:
         graph_builder.add_node("rapper", rapper_node)
         graph_builder.add_node("tools", tool_node)
 
-        # Add edges
+        # Add conditional edges - this is crucial for tool usage
         graph_builder.add_conditional_edges(
             "rapper",
             tools_condition,
             {
                 "tools": "tools",
                 END: END
-            }
+            },
         )
+
+        # After tools are executed, go back to rapper for final response
         graph_builder.add_edge("tools", "rapper")
 
         # Set the entry point
@@ -156,7 +162,7 @@ class RapperAgent:
         opponent_name: str,
         style: str,
         is_first_round: bool,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None
+        cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> Dict[str, RapperCacheData]:
         """
         Get or fetch rapper data, using cache when available.
@@ -202,7 +208,7 @@ class RapperAgent:
                         biographical_info=rapper_data.biographical_info,
                         wikipedia_info=rapper_data.wikipedia_info,
                         internet_search_info=rapper_data.internet_search_info,
-                        style_info=rapper_data.style_info
+                        style_info=rapper_data.style_info,
                     )
                 else:
                     # Create empty cache data if no tools available
@@ -230,20 +236,22 @@ class RapperAgent:
             rapper_info_tool = None
 
             for tool in self.mcp_tools:
-                tool_name = getattr(tool, 'name', '')
-                if tool_name == 'search_wikipedia':
+                tool_name = getattr(tool, "name", "")
+                if tool_name == "search_wikipedia":
                     wikipedia_tool = tool
-                elif tool_name == 'search_rapper_wikipedia':
+                elif tool_name == "search_rapper_wikipedia":
                     rapper_wikipedia_tool = tool
-                elif tool_name == 'search_internet':
+                elif tool_name == "search_internet":
                     internet_tool = tool
-                elif tool_name == 'search_rapper_info':
+                elif tool_name == "search_rapper_info":
                     rapper_info_tool = tool
 
             # Fetch Wikipedia information
             if rapper_wikipedia_tool:
                 try:
-                    wikipedia_result = await rapper_wikipedia_tool.ainvoke({"rapper_name": rapper_name})
+                    wikipedia_result = await rapper_wikipedia_tool.ainvoke(
+                        {"rapper_name": rapper_name}
+                    )
                     rapper_data.wikipedia_info = str(wikipedia_result)
                 except Exception as e:
                     print(f"Error fetching Wikipedia data for {rapper_name}: {e}")
@@ -251,7 +259,9 @@ class RapperAgent:
             # Fetch internet search information
             if rapper_info_tool:
                 try:
-                    internet_result = await rapper_info_tool.ainvoke({"rapper_name": rapper_name})
+                    internet_result = await rapper_info_tool.ainvoke(
+                        {"rapper_name": rapper_name}
+                    )
                     rapper_data.internet_search_info = str(internet_result)
                 except Exception as e:
                     print(f"Error fetching internet data for {rapper_name}: {e}")
@@ -263,7 +273,9 @@ class RapperAgent:
             if rapper_data.internet_search_info:
                 bio_parts.append(f"Internet: {rapper_data.internet_search_info}")
 
-            rapper_data.biographical_info = "\n\n".join(bio_parts) if bio_parts else None
+            rapper_data.biographical_info = (
+                "\n\n".join(bio_parts) if bio_parts else None
+            )
 
         except Exception as e:
             print(f"Error fetching data for {rapper_name}: {e}")
@@ -277,7 +289,7 @@ class RapperAgent:
         style: str,
         round_number: int,
         previous_verses: Optional[List[Dict]] = None,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None
+        cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> str:
         """
         Generate a rap verse using available tools for artist data retrieval.
@@ -309,17 +321,27 @@ class RapperAgent:
                 opponent_name=opponent_name,
                 style=style,
                 is_first_round=is_first_round,
-                cached_data=cached_data
+                cached_data=cached_data,
             )
 
             # Create the system message with cached data
             system_message = self._create_system_message(
-                rapper_name, opponent_name, style, round_number, previous_verses, rapper_cache_data
+                rapper_name,
+                opponent_name,
+                style,
+                round_number,
+                previous_verses,
+                rapper_cache_data,
             )
 
-            # Create the human message
+            # Create the human message using prompt service
+            human_template = prompt_service.get_prompt(
+                "rapper", "human_message", "template"
+            )
             human_message = HumanMessage(
-                content=f"Generate a rap verse for {rapper_name} in the style of {style} for round {round_number}."
+                content=human_template.format(
+                    rapper_name=rapper_name, style=style, round_number=round_number
+                )
             )
 
             # Initialize the state
@@ -331,7 +353,7 @@ class RapperAgent:
                 "context": None,
                 "cached_data": rapper_cache_data,
                 "round_number": round_number,
-                "is_first_round": is_first_round
+                "is_first_round": is_first_round,
             }
 
             # Run the graph
@@ -352,10 +374,10 @@ class RapperAgent:
         style: str,
         round_number: int,
         previous_verses: Optional[List[Dict]] = None,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None
+        cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> SystemMessage:
         """
-        Create a system message for the rapper agent.
+        Create a system message for the rapper agent using the prompt service.
 
         Args:
             rapper_name: Name of the rapper
@@ -368,54 +390,37 @@ class RapperAgent:
         Returns:
             SystemMessage: The created system message
         """
-        # Create system content with tool usage instructions
-        system_content = f"""You are {rapper_name}, a skilled rapper in a rap battle against {opponent_name}.
-Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
+        # Determine if biographical info is available
+        has_biographical_info = False
+        biographical_info = None
+        opponent_biographical_info = None
 
-IMPORTANT: Use the retrieve_artist_data tool to get authentic lyrical content and style information:
-- First, retrieve data for yourself ({rapper_name}) to understand your authentic style and lyrical patterns
-- Then, retrieve data for your opponent ({opponent_name}) to craft specific, fact-based disses
-- Use the retrieved lyrics as inspiration for flow, wordplay, and style authenticity
-
-Follow these guidelines:
-1. Create a verse that incorporates authentic elements of {style} and {rapper_name}'s actual lyrical style
-2. Include specific personal attacks and disses based on real facts about {opponent_name}'s life, career, or lyrical content
-3. Reference actual lyrical patterns, themes, or characteristics from the retrieved data
-4. Make your disses clever, creative, and authentic to {style} rap style
-5. Keep the verse between 12-16 lines to allow room for detailed, fact-based content
-6. Use the complete lyrics from the database to inspire authentic flow and wordplay patterns
-"""
-
-        # Add cached biographical information if available
         if cached_data:
             rapper_key = rapper_name.lower().strip()
             opponent_key = opponent_name.lower().strip()
 
-            if rapper_key in cached_data and cached_data[rapper_key].biographical_info:
-                system_content += f"\n\nBiographical information about {rapper_name}:\n{cached_data[rapper_key].biographical_info}\n"
+            if (
+                rapper_key in cached_data
+                and cached_data[rapper_key].biographical_info
+                and opponent_key in cached_data
+                and cached_data[opponent_key].biographical_info
+            ):
+                has_biographical_info = True
+                biographical_info = cached_data[rapper_key].biographical_info
+                opponent_biographical_info = cached_data[opponent_key].biographical_info
 
-            if opponent_key in cached_data and cached_data[opponent_key].biographical_info:
-                system_content += f"\nBiographical information about {opponent_name}:\n{cached_data[opponent_key].biographical_info}\n"
-        else:
-            # Fallback for first round when tools might be needed
-            system_content += f"""
-7. If this is the first round, research {rapper_name} style, background, and facts using the available search tools.
-   Use any of these tools if they are available:
-   - search_internet or search_wikipedia for general information
-   - search_rapper_info or search_rapper_wikipedia specifically for rapper information
-8. If this is the first round, research {opponent_name}'s biography, career, and personal life using search tools.
-"""
-
-        # Add common ending
-        system_content += """
-Remember to stay in character throughout the verse and make it sound authentic to the style.
-"""
-
-        # Add context about previous verses if available
-        if previous_verses:
-            system_content += "\nPrevious verses in this battle:\n"
-            for verse in previous_verses:
-                system_content += f"\n{verse['rapper_name']}:\n{verse['content']}\n"
+        # Use prompt service to create the system message
+        system_content = prompt_service.get_rapper_system_message(
+            rapper_name=rapper_name,
+            opponent_name=opponent_name,
+            style=style,
+            round_number=round_number,
+            has_biographical_info=has_biographical_info,
+            biographical_info=biographical_info,
+            opponent_biographical_info=opponent_biographical_info,
+            is_first_round=(round_number == 1),
+            previous_verses=previous_verses,
+        )
 
         return SystemMessage(content=system_content)
 
@@ -450,7 +455,12 @@ Remember to stay in character throughout the verse and make it sound authentic t
             in_verse = False
 
             for line in lines:
-                if line.strip() and not line.startswith("I'll") and not line.startswith("Here's") and not line.startswith("This is"):
+                if (
+                    line.strip()
+                    and not line.startswith("I'll")
+                    and not line.startswith("Here's")
+                    and not line.startswith("This is")
+                ):
                     in_verse = True
 
                 if in_verse:
@@ -470,10 +480,12 @@ Remember to stay in character throughout the verse and make it sound authentic t
 # Create a rapper agent instance
 rapper_agent = RapperAgent()
 
+
 # Define an initialization function that will be called from the application startup
 async def initialize_rapper_agent():
     """Initialize the rapper agent with MCP tools."""
     await rapper_agent._init_mcp_tools()
+
 
 # Note: This function will be called during application startup
 # We don't call it here to avoid the "no running event loop" error

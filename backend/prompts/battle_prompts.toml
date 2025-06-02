@@ -1,0 +1,42 @@
+# Battle-related prompts for RAGERaps application
+
+[fallback_verses]
+# Default fallback verses when AI generation fails
+
+[fallback_verses.rapper1]
+template = """Yo, I'm {rapper_name}, stepping to the mic,
+Facing off with {opponent_name}, gonna win this fight.
+Round {round_number}, and I'm bringing the heat,
+My rhymes are fire, can't be beat.
+
+This {style} flow is what I do best,
+Put your skills to the ultimate test.
+When it comes to rap, I'm at the top,
+Watch me shine while your flow flops."""
+
+[fallback_verses.rapper2]
+template = """I'm {rapper_name}, the best in the game,
+After this battle, nothing will be the same.
+{opponent_name} thinks they can step to me?
+But my {style} skills are legendary.
+
+Round {round_number}, I'm bringing my A-game,
+When I'm done, you'll remember my name.
+My flow is smooth, my rhymes are tight,
+This battle is mine, I'll win tonight."""
+
+[default_judgment]
+# Default judgment template when AI judging fails
+template = """
+Analysis of {rapper1_name}'s verse:
+{rapper1_name} delivered a verse with interesting wordplay and flow.
+
+Analysis of {rapper2_name}'s verse:
+{rapper2_name} showed creativity and technical skill in their delivery.
+
+Comparison:
+Both rappers showed skill, but {winner} had slightly better delivery and impact.
+
+Winner: {winner}
+{winner} wins this round with a more impressive overall performance.
+"""
