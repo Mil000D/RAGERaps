@@ -11,6 +11,8 @@ from app.db.repositories.battle_repo import battle_repository
 from app.models.battle import BattleCreate, BattleResponse
 from app.models.judgment import JudgmentCreate
 from app.models.verse import Verse
+from app.services.data_cache_service import RapperCacheData
+from app.services.prompt_service import prompt_service
 
 
 class BattleService:
@@ -38,17 +40,16 @@ class BattleService:
         """
         Generate a complete battle with all rounds and verses in one go.
 
-        This method creates a battle, generates verses for both rappers in each round,
-        and judges each round automatically until a rapper wins 2 rounds or all 3 rounds
-        are completed.
+        This method creates a battle and generates verses for both rappers in each round.
+        Automatic judging has been removed - users can manually judge rounds using the API endpoints.
 
-        Note: For user judgment control, use generate_battle_with_verses instead.
+        Note: This method now behaves similarly to generate_battle_with_verses but for all rounds.
 
         Args:
             battle_data: Battle creation data
 
         Returns:
-            BattleResponse: Completed battle with all rounds, verses, and judgments
+            BattleResponse: Battle with all rounds and verses (no automatic judgments)
         """
         # Create the battle
         battle = await self.create_battle(battle_data)
@@ -57,20 +58,32 @@ class BattleService:
         # Track previous verses for context
         previous_verses = []
 
+        # Track cached data across rounds to avoid redundant API calls
+        cached_data = None
+
         try:
-            # Continue until battle is completed (a rapper wins 2 rounds or all 3 rounds are done)
-            while battle.status != "completed":
+            # Generate verses for all rounds (no automatic judging)
+            for round_number in range(1, 4):  # Generate verses for rounds 1, 2, and 3
                 # Get the current round
                 current_round = None
                 for battle_round in battle.rounds:
-                    if battle_round.round_number == battle.current_round:
+                    if battle_round.round_number == round_number:
                         current_round = battle_round
                         break
 
                 if not current_round:
+                    # Create the round if it doesn't exist
+                    await battle_repository.add_round(battle_id, round_number)
+                    battle = await self.get_battle(battle_id)
+                    for battle_round in battle.rounds:
+                        if battle_round.round_number == round_number:
+                            current_round = battle_round
+                            break
+
+                if not current_round:
                     break
 
-                # Generate verses for both rappers and judge the round in parallel
+                # Generate verses for both rappers in parallel (no automatic judging)
                 try:
                     # Execute the battle round with parallel agent execution
                     round_result = await execute_battle_round_parallel(
@@ -80,8 +93,13 @@ class BattleService:
                         style1=battle.style1,
                         style2=battle.style2,
                         round_number=battle.current_round,
-                        previous_verses=previous_verses if previous_verses else None
+                        previous_verses=previous_verses if previous_verses else None,
+                        cached_data=cached_data
                     )
+
+                    # Update cached data for subsequent rounds
+                    if "cached_data" in round_result and round_result["cached_data"]:
+                        cached_data = round_result["cached_data"]
 
                     # Extract verses and judgment from the result
                     verse1_content = None
@@ -120,29 +138,17 @@ class BattleService:
                         "content": verse2_content
                     })
 
-                    # Extract judgment
-                    judgment_result = round_result["judgment"]
-                    winner = judgment_result["winner"]
-                    feedback = judgment_result["feedback"]
-
-                    # Create and add the judgment
-                    judgment = JudgmentCreate(
-                        round_id=current_round.id,
-                        winner=winner,
-                        feedback=feedback
-                    )
+                    # Note: Automatic judging has been removed. Users can manually judge rounds using the API endpoints.
                 except Exception as e:
                     # If there's an error, use default verses and judgment
                     # First rapper with style1
-                    verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {battle.current_round}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                    verse1_content = prompt_service.get_fallback_verse(
+                        "rapper1",
+                        rapper_name=battle.rapper1_name,
+                        opponent_name=battle.rapper2_name,
+                        round_number=battle.current_round,
+                        style=battle.style1
+                    )
 
                     verse1 = Verse(
                         round_id=current_round.id,
@@ -153,15 +159,13 @@ Watch me shine while your flow flops."""
                     await battle_repository.add_verse(current_round.id, verse1)
 
                     # Second rapper with style2
-                    verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {battle.current_round}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                    verse2_content = prompt_service.get_fallback_verse(
+                        "rapper2",
+                        rapper_name=battle.rapper2_name,
+                        opponent_name=battle.rapper1_name,
+                        round_number=battle.current_round,
+                        style=battle.style2
+                    )
 
                     verse2 = Verse(
                         round_id=current_round.id,
@@ -181,36 +185,7 @@ This battle is mine, I'll win tonight."""
                         "content": verse2_content
                     })
 
-                    # Default judgment
-                    import random
-                    winner = battle.rapper1_name if random.random() < 0.5 else battle.rapper2_name
-                    feedback = f"""
-Analysis of {battle.rapper1_name}'s verse:
-{battle.rapper1_name} delivered a verse with interesting wordplay and flow.
-
-Analysis of {battle.rapper2_name}'s verse:
-{battle.rapper2_name} showed creativity and technical skill in their delivery.
-
-Comparison:
-Both rappers showed skill, but {winner} had slightly better delivery and impact.
-
-Winner: {winner}
-{winner} wins this round with a more impressive overall performance.
-"""
-
-                    # Create judgment
-                    judgment = JudgmentCreate(
-                        round_id=current_round.id,
-                        winner=winner,
-                        feedback=feedback
-                    )
-
-                await battle_repository.add_judgment(judgment)
-
-                # Get the updated battle to check if it's completed or if we need to continue
-                battle = await self.get_battle(battle_id)
-                if not battle:
-                    break
+                    # Note: Automatic judging has been removed. Users can manually judge rounds using the API endpoints.
         except Exception as e:
             # If there's an error during generation, return the battle in its current state
             # This ensures we don't lose progress if something goes wrong
@@ -309,7 +284,8 @@ Winner: {winner}
             opponent_name=opponent_name,
             style=style,
             round_number=battle.current_round,
-            previous_verses=previous_verses if previous_verses else None
+            previous_verses=previous_verses if previous_verses else None,
+            cached_data=None  # Individual verse generation doesn't use cached data
         )
 
         # Create the verse
@@ -322,16 +298,7 @@ Winner: {winner}
         # Add the verse to the round
         await battle_repository.add_verse(current_round.id, verse)
 
-        # Check if both rappers have verses and auto-judge if needed
-        updated_round = None
-        for r in battle.rounds:
-            if r.id == current_round.id:
-                updated_round = r
-                break
-
-        if updated_round and updated_round.rapper1_verse and updated_round.rapper2_verse:
-            # Auto-judge the round
-            await self.judge_round(battle_id, updated_round.id)
+        # Note: Automatic judging has been removed. Users can manually judge rounds using the API endpoints.
 
         return verse
 
@@ -375,7 +342,8 @@ Winner: {winner}
                     style1=battle.style1,
                     style2=battle.style2,
                     round_number=battle.current_round,
-                    previous_verses=None
+                    previous_verses=None,
+                    cached_data=None  # First round, no cached data yet
                 )
 
                 # Extract verses from the result
@@ -408,15 +376,13 @@ Winner: {winner}
             except Exception as e:
                 # If there's an error, use default verses
                 # First rapper with style1
-                verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {battle.current_round}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                verse1_content = prompt_service.get_fallback_verse(
+                    "rapper1",
+                    rapper_name=battle.rapper1_name,
+                    opponent_name=battle.rapper2_name,
+                    round_number=battle.current_round,
+                    style=battle.style1
+                )
 
                 verse1 = Verse(
                     round_id=current_round.id,
@@ -427,15 +393,13 @@ Watch me shine while your flow flops."""
                 await battle_repository.add_verse(current_round.id, verse1)
 
                 # Second rapper with style2
-                verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {battle.current_round}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                verse2_content = prompt_service.get_fallback_verse(
+                    "rapper2",
+                    rapper_name=battle.rapper2_name,
+                    opponent_name=battle.rapper1_name,
+                    round_number=battle.current_round,
+                    style=battle.style2
+                )
 
                 verse2 = Verse(
                     round_id=current_round.id,
@@ -539,7 +503,8 @@ This battle is mine, I'll win tonight."""
                                 style1=battle.style1,
                                 style2=battle.style2,
                                 round_number=new_round.round_number,
-                                previous_verses=previous_verses if previous_verses else None
+                                previous_verses=previous_verses if previous_verses else None,
+                                cached_data=None  # Subsequent rounds in judge_round don't use cached data
                             )
 
                             # Extract verses from the result
@@ -572,15 +537,13 @@ This battle is mine, I'll win tonight."""
                         except Exception as e:
                             # If there's an error, use default verses
                             # First rapper
-                            verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {new_round.round_number}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                            verse1_content = prompt_service.get_fallback_verse(
+                                "rapper1",
+                                rapper_name=battle.rapper1_name,
+                                opponent_name=battle.rapper2_name,
+                                round_number=new_round.round_number,
+                                style=battle.style1
+                            )
 
                             verse1 = Verse(
                                 round_id=new_round.id,
@@ -591,15 +554,13 @@ Watch me shine while your flow flops."""
                             await battle_repository.add_verse(new_round.id, verse1)
 
                             # Second rapper
-                            verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {new_round.round_number}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                            verse2_content = prompt_service.get_fallback_verse(
+                                "rapper2",
+                                rapper_name=battle.rapper2_name,
+                                opponent_name=battle.rapper1_name,
+                                round_number=new_round.round_number,
+                                style=battle.style2
+                            )
 
                             verse2 = Verse(
                                 round_id=new_round.id,
@@ -654,7 +615,8 @@ This battle is mine, I'll win tonight."""
                 style1=battle.style1,
                 style2=battle.style2,
                 round_number=current_round.round_number,
-                previous_verses=previous_verses
+                previous_verses=previous_verses,
+                cached_data=None  # Judgment doesn't need cached data
             )
 
             # Extract judgment from the result
@@ -665,19 +627,11 @@ This battle is mine, I'll win tonight."""
             # If there's an error, use a default judgment
             import random
             winner = battle.rapper1_name if random.random() < 0.5 else battle.rapper2_name
-            feedback = f"""
-Analysis of {battle.rapper1_name}'s verse:
-{battle.rapper1_name} delivered a verse with interesting wordplay and flow.
-
-Analysis of {battle.rapper2_name}'s verse:
-{battle.rapper2_name} showed creativity and technical skill in their delivery.
-
-Comparison:
-Both rappers showed skill, but {winner} had slightly better delivery and impact.
-
-Winner: {winner}
-{winner} wins this round with a more impressive overall performance.
-"""
+            feedback = prompt_service.get_default_judgment(
+                rapper1_name=battle.rapper1_name,
+                rapper2_name=battle.rapper2_name,
+                winner=winner
+            )
 
         # Create the judgment
         judgment = JudgmentCreate(
@@ -727,19 +681,18 @@ Winner: {winner}
                             opponent_name=battle.rapper2_name,
                             style=battle.style1,
                             round_number=new_round.round_number,
-                            previous_verses=previous_verses if previous_verses else None
+                            previous_verses=previous_verses if previous_verses else None,
+                            cached_data=None  # Individual verse generation doesn't use cached data
                         )
                     except Exception as e:
                         # If there's an error, use a default verse
-                        verse1_content = f"""Yo, I'm {battle.rapper1_name}, stepping to the mic,
-Facing off with {battle.rapper2_name}, gonna win this fight.
-Round {new_round.round_number}, and I'm bringing the heat,
-My rhymes are fire, can't be beat.
-
-This {battle.style1} flow is what I do best,
-Put your skills to the ultimate test.
-When it comes to rap, I'm at the top,
-Watch me shine while your flow flops."""
+                        verse1_content = prompt_service.get_fallback_verse(
+                            "rapper1",
+                            rapper_name=battle.rapper1_name,
+                            opponent_name=battle.rapper2_name,
+                            round_number=new_round.round_number,
+                            style=battle.style1
+                        )
 
                     verse1 = Verse(
                         round_id=new_round.id,
@@ -762,19 +715,18 @@ Watch me shine while your flow flops."""
                             opponent_name=battle.rapper1_name,
                             style=battle.style2,
                             round_number=new_round.round_number,
-                            previous_verses=previous_verses
+                            previous_verses=previous_verses,
+                            cached_data=None  # Individual verse generation doesn't use cached data
                         )
                     except Exception as e:
                         # If there's an error, use a default verse
-                        verse2_content = f"""I'm {battle.rapper2_name}, the best in the game,
-After this battle, nothing will be the same.
-{battle.rapper1_name} thinks they can step to me?
-But my {battle.style2} skills are legendary.
-
-Round {new_round.round_number}, I'm bringing my A-game,
-When I'm done, you'll remember my name.
-My flow is smooth, my rhymes are tight,
-This battle is mine, I'll win tonight."""
+                        verse2_content = prompt_service.get_fallback_verse(
+                            "rapper2",
+                            rapper_name=battle.rapper2_name,
+                            opponent_name=battle.rapper1_name,
+                            round_number=new_round.round_number,
+                            style=battle.style2
+                        )
 
                     verse2 = Verse(
                         round_id=new_round.id,

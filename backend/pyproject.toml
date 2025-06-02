@@ -22,4 +22,8 @@ dependencies = [
     "asyncio>=3.4.3",
     "pydantic-settings>=2.2.0",
     "langchain-mcp-adapters>=0.1.0",
+    "pandas>=2.2.3",
+    "langchain-qdrant>=0.2.0",
+    "chardet>=5.2.0",
+    "toml>=0.10.2",
 ]

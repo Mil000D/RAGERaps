@@ -37,11 +37,19 @@ class Database:
         """
         client = cls.get_client()
 
-        # Check if the collection exists, if not create it
+        # Check if the rap styles collection exists, if not create it
         if not client.collection_exists(settings.qdrant_collection_name):
             # Using 1536 dimensions for OpenAI embeddings
             client.create_collection(
                 collection_name=settings.qdrant_collection_name,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
+
+        # Check if the artists collection exists, if not create it
+        if not client.collection_exists(settings.qdrant_artists_collection_name):
+            # Using 1536 dimensions for text-embedding-3-small
+            client.create_collection(
+                collection_name=settings.qdrant_artists_collection_name,
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
 

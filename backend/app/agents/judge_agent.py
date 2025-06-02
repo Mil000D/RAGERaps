@@ -1,14 +1,16 @@
 """
-Judge agent implementation using LangChain.
+Judge agent implementation using LangChain with RAG integration.
 """
-from typing import Tuple
+from typing import Tuple, Optional, Dict, Any
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from app.core.config import settings
+from app.services.prompt_service import prompt_service
 from app.tools.style_tool import style_tool
+from app.tools.artist_retrieval_tool import artist_retrieval_tool
 
 
 class JudgeAgent:
@@ -24,40 +26,21 @@ class JudgeAgent:
             streaming=False
         )
 
-        # Create the prompt template
+        # Initialize tools
+        self.tools = [artist_retrieval_tool]
+
+        # Bind tools to the LLM
+        self.llm_with_tools = self.llm.bind_tools(self.tools)
+
+        # Create the prompt template using prompt service
+        system_prompt = prompt_service.get_judge_system_prompt()
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", self._get_system_prompt()),
+            ("system", system_prompt),
             ("human", "{input}")
         ])
 
-        # Create the chain
-        self.chain = self.prompt | self.llm | StrOutputParser()
-
-    def _get_system_prompt(self) -> str:
-        """
-        Get the system prompt for the judge agent.
-
-        Returns:
-            str: System prompt
-        """
-        return """You are an expert judge of rap battles. Your task is to evaluate verses from two rappers, each using their own distinct rap style, and determine the winner based on:
-
-1. Style authenticity: How well each verse matches the rapper's specified rap style
-2. Technical skill: Flow, rhyme schemes, wordplay, and delivery
-3. Content: Creativity, storytelling, and effective disses
-4. Biographical attacks: How well they incorporate real facts about their opponent in their disses
-5. Overall impact: How memorable and impressive the verse is
-
-Each rapper will be using a different style, so judge them based on how well they execute their own style, not by comparing styles directly.
-
-Provide a fair and detailed analysis of both verses, highlighting strengths and weaknesses. Then declare a winner and explain your decision.
-
-Your response should follow this format:
-1. Analysis of Rapper 1's verse and how well it fits their style
-2. Analysis of Rapper 2's verse and how well it fits their style
-3. Comparison of the two verses (considering each within the context of their own style)
-4. Winner declaration and justification
-"""
+        # Create the chain with tools
+        self.chain = self.prompt | self.llm_with_tools
 
     async def judge_round(
         self,
@@ -69,7 +52,7 @@ Your response should follow this format:
         rapper2_style: str
     ) -> Tuple[str, str]:
         """
-        Judge a round of the rap battle.
+        Judge a round of the rap battle using available tools for artist data retrieval.
 
         Args:
             rapper1_name: Name of the first rapper
@@ -87,30 +70,42 @@ Your response should follow this format:
             style1_info = await style_tool.get_style.invoke(rapper1_style)
             style2_info = await style_tool.get_style.invoke(rapper2_style)
 
-            # Create the input with both styles
-            input_text = f"""Rapper 1 ({rapper1_name}) Style: {rapper1_style}
-Rapper 2 ({rapper2_name}) Style: {rapper2_style}
+            # Create the input using prompt service
+            input_text = prompt_service.get_judge_input_template(
+                rapper1_name=rapper1_name,
+                rapper1_style=rapper1_style,
+                rapper2_name=rapper2_name,
+                rapper2_style=rapper2_style,
+                style1_info=style1_info,
+                style2_info=style2_info,
+                rapper1_verse=rapper1_verse,
+                rapper2_verse=rapper2_verse
+            )
 
-Rapper 1 Style Information:
-{style1_info}
-
-Rapper 2 Style Information:
-{style2_info}
-
-{rapper1_name}'s Verse:
-{rapper1_verse}
-
-{rapper2_name}'s Verse:
-{rapper2_verse}
-
-Please judge this round and determine the winner. Consider how well each rapper executed their specific style.
-"""
-
-            # Run the chain
+            # Run the chain with tools
             result = await self.chain.ainvoke({"input": input_text})
 
+            # Handle tool calls if present
+            if hasattr(result, 'tool_calls') and result.tool_calls:
+                # Process tool calls and get final response
+                from langchain_core.messages import ToolMessage
+
+                tool_messages = []
+                for tool_call in result.tool_calls:
+                    tool_result = await artist_retrieval_tool._arun(**tool_call['args'])
+                    tool_messages.append(ToolMessage(
+                        content=tool_result,
+                        tool_call_id=tool_call['id']
+                    ))
+
+                # Get final response after tool execution
+                final_result = await self.llm.ainvoke([result] + tool_messages)
+                result_text = final_result.content
+            else:
+                result_text = result.content if hasattr(result, 'content') else str(result)
+
             # Extract the winner and feedback
-            winner, feedback = self._extract_winner(result, rapper1_name, rapper2_name)
+            winner, feedback = self._extract_winner(result_text, rapper1_name, rapper2_name)
 
             return winner, feedback
         except Exception:
