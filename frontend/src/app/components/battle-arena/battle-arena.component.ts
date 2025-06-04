@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BattleService } from '../../services/battle.service';
-import { Battle, Round, JudgmentCreate } from '../../models/battle.model';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ActivatedRoute, Router} from '@angular/router';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {BattleService} from '../../services/battle.service';
+import {Battle, JudgmentCreate} from '../../models/battle.model';
 
 @Component({
   selector: 'app-battle-arena',
@@ -98,6 +98,10 @@ export class BattleArenaComponent implements OnInit {
         this.battle = updatedBattle;
         this.loading = false;
 
+        const currentRound = updatedBattle.rounds.find(r => r.id === roundId);
+        console.log('Updated round after user judgment:', currentRound);
+        console.log('User judgment:', currentRound?.user_judgment);
+
         this.rapper1Wins = updatedBattle.rapper1_wins || 0;
         this.rapper2Wins = updatedBattle.rapper2_wins || 0;
         this.judgmentForm.reset();
@@ -118,23 +122,24 @@ export class BattleArenaComponent implements OnInit {
     return name ? name.charAt(0).toUpperCase() : '';
   }
 
-  private extractWinnerFromFeedback(feedback: string): string {
-    const winnerMatch = feedback.match(/Winner:\s*([^\n]+)/);
-    return winnerMatch ? winnerMatch[1].trim() : "";
-  }
-
   private extractSectionContent(feedback: string, sectionHeader: string, nextSectionHeaders: string[]): string {
     if (!feedback) return '';
 
-    const sectionStart = feedback.indexOf(sectionHeader);
-    if (sectionStart === -1) return '';
+    const feedbackLower = feedback.toLowerCase();
+    const headerLower = sectionHeader.toLowerCase();
+    const sectionStart = feedbackLower.indexOf(headerLower);
+
+    if (sectionStart === -1) {
+      console.log(`Section "${sectionHeader}" not found`);
+      return '';
+    }
 
     const contentStart = sectionStart + sectionHeader.length;
 
-    // Find where this section ends (the start of any next section)
     let sectionEnd = feedback.length;
     for (const nextHeader of nextSectionHeaders) {
-      const nextHeaderPos = feedback.indexOf(nextHeader, contentStart);
+      const nextHeaderLower = nextHeader.toLowerCase();
+      const nextHeaderPos = feedbackLower.indexOf(nextHeaderLower, contentStart);
       if (nextHeaderPos !== -1 && nextHeaderPos < sectionEnd) {
         sectionEnd = nextHeaderPos;
       }
@@ -168,15 +173,12 @@ export class BattleArenaComponent implements OnInit {
       comparison: ''
     };
 
-    // Define the section headers exactly as they appear in the template
-    const rapper1Header = `Analysis of ${this.battle.rapper1_name}'s verse:`;
-    const rapper2Header = `Analysis of ${this.battle.rapper2_name}'s verse:`;
+    const rapper1Header = `Analysis of ${this.battle.rapper1_name}:`;
+    const rapper2Header = `Analysis of ${this.battle.rapper2_name}:`;
     const comparisonHeader = "Comparison:";
 
-    // The sections in order, used to determine where each section ends
     const allHeaders = [rapper1Header, rapper2Header, comparisonHeader];
 
-    // Extract each section
     result.rapper1Analysis = this.extractSectionContent(
       feedback,
       rapper1Header,
@@ -189,22 +191,18 @@ export class BattleArenaComponent implements OnInit {
       allHeaders.slice(allHeaders.indexOf(rapper2Header) + 1)
     );
 
-    // Extract the comparison section - this might contain the winner information now
     result.comparison = this.extractSectionContent(
       feedback,
       comparisonHeader,
       []
     );
 
-    // Clean all sections
     result.rapper1Analysis = this.cleanTextContent(result.rapper1Analysis);
     result.rapper2Analysis = this.cleanTextContent(result.rapper2Analysis);
     result.comparison = this.cleanTextContent(result.comparison);
-
     return result;
   }
 
-  // Initialize the collapsed state for a round if it doesn't exist
   initCollapsedState(roundId: string): void {
     if (!this.collapsedAnalysis[roundId]) {
       this.collapsedAnalysis[roundId] = {
@@ -215,13 +213,11 @@ export class BattleArenaComponent implements OnInit {
     }
   }
 
-  // Toggle the collapse state of an analysis section
   toggleAnalysisSection(roundId: string, section: 'rapper1' | 'rapper2' | 'comparison'): void {
     this.initCollapsedState(roundId);
     this.collapsedAnalysis[roundId][section] = !this.collapsedAnalysis[roundId][section];
   }
 
-  // Check if an analysis section is collapsed
   isCollapsed(roundId: string, section: 'rapper1' | 'rapper2' | 'comparison'): boolean {
     this.initCollapsedState(roundId);
     return this.collapsedAnalysis[roundId][section];

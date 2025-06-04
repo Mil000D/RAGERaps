@@ -17,14 +17,15 @@
           <h3 class="rapper-name">{{ battle.rapper2_name }}</h3>
           <div class="wins">{{ rapper2Wins }}</div>
         </div>
-
       </div>
+
       <div class="battle-meta">
         <span class="battle-style">{{ battle.style1 }} vs {{ battle.style2 }}</span>
         <span class="battle-status" [class.completed]="battle.status === 'completed'">
           {{ battle.status === 'completed' ? 'Completed' : 'In Progress' }}
         </span>
       </div>
+
       <div *ngIf="battle.winner" class="winner-announcement">
         Winner: {{ battle.winner }}
       </div>
@@ -54,12 +55,12 @@
           <h3>User Judgment</h3>
           <div class="judgment-content">
             <div class="judgment-winner">
-              Winner: <strong>{{ round.user_judgment.winner }}</strong>
+              <p>Winner: <strong>{{ round.winner }}</strong></p>
             </div>
           </div>
         </div>
 
-        <div class="judgment" *ngIf="round.judge_feedback">
+        <div class="judgment" *ngIf="round.judge_feedback && !round.user_judgment">
           <h3>AI Judgment</h3>
           <div class="judgment-content">
             <div class="judgment-winner" *ngIf="round.winner">
@@ -72,21 +73,21 @@
                     <h4>Analysis of {{battle.rapper1_name}}'s verse:</h4>
                     <span class="toggle-icon">{{ isCollapsed(round.id!, 'rapper1') ? '○' : '●' }}</span>
                   </div>
-                  <p [class.collapsed]="isCollapsed(round.id!, 'rapper1')">{{feedback.rapper1Analysis}}</p>
+                  <pre [class.collapsed]="isCollapsed(round.id!, 'rapper1')" class="feedback-content">{{feedback.rapper1Analysis}}</pre>
                 </div>
                 <div class="judgment-section rapper2-analysis">
                   <div class="section-header" (click)="toggleAnalysisSection(round.id!, 'rapper2')">
                     <h4>Analysis of {{battle.rapper2_name}}'s verse:</h4>
                     <span class="toggle-icon">{{ isCollapsed(round.id!, 'rapper2') ? '○' : '●' }}</span>
                   </div>
-                  <p [class.collapsed]="isCollapsed(round.id!, 'rapper2')">{{feedback.rapper2Analysis}}</p>
+                  <pre [class.collapsed]="isCollapsed(round.id!, 'rapper2')" class="feedback-content">{{feedback.rapper2Analysis}}</pre>
                 </div>
                 <div class="judgment-section comparison">
                   <div class="section-header" (click)="toggleAnalysisSection(round.id!, 'comparison')">
                     <h4>Comparison:</h4>
                     <span class="toggle-icon">{{ isCollapsed(round.id!, 'comparison') ? '○' : '●' }}</span>
                   </div>
-                  <p [class.collapsed]="isCollapsed(round.id!, 'comparison')">{{feedback.comparison}}</p>
+                  <pre [class.collapsed]="isCollapsed(round.id!, 'comparison')" class="feedback-content">{{feedback.comparison}}</pre>
                 </div>
               </ng-container>
             </div>
@@ -100,7 +101,7 @@
             <button class="ai-judge-btn"
                     (click)="judgeRoundWithAI(battle.id!, round.id!)"
                     [disabled]="loading">
-              {{'Let AI Judge' }}
+              Judge with AI
             </button>
 
             <div class="or-divider">OR</div>
@@ -108,21 +109,22 @@
             <div class="user-judge">
               <form [formGroup]="judgmentForm" (ngSubmit)="judgeRoundByUser(battle.id!, round.id!)">
                 <div class="form-group">
-                  <label>Pick Winner</label>
+                  <label>Select Winner</label>
                   <div class="radio-group">
                     <div class="radio-option">
-                      <input type="radio" [id]="'rapper1-' + round.round_number" formControlName="winner"
+                      <input type="radio" id="rapper1-{{round.id}}" name="winner" formControlName="winner"
                              [value]="battle.rapper1_name">
-                      <label [for]="'rapper1-' + round.round_number">
+                      <label for="rapper1-{{round.id}}">
                         <div class="rapper-initial">{{ getInitial(battle.rapper1_name) }}</div>
                         {{ battle.rapper1_name }}
                         <span class="crown-icon">👑</span>
                       </label>
                     </div>
+
                     <div class="radio-option">
-                      <input type="radio" [id]="'rapper2-' + round.round_number" formControlName="winner"
+                      <input type="radio" id="rapper2-{{round.id}}" name="winner" formControlName="winner"
                              [value]="battle.rapper2_name">
-                      <label [for]="'rapper2-' + round.round_number">
+                      <label for="rapper2-{{round.id}}">
                         <div class="rapper-initial">{{ getInitial(battle.rapper2_name) }}</div>
                         {{ battle.rapper2_name }}
                         <span class="crown-icon">👑</span>
@@ -132,7 +134,7 @@
                 </div>
 
                 <button type="submit" class="submit-btn" [disabled]="judgmentForm.invalid || loading">
-                  Submit Your Judgment
+                  Submit Judgment
                 </button>
               </form>
             </div>
@@ -140,21 +142,16 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="battle-actions">
-      <button class="back-btn" (click)="backToList()">Back to Battles</button>
+  <div class="battle-actions">
+    <button class="back-btn" (click)="backToList()">Back to Battles</button>
+  </div>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">{{ error || 'Processing...' }}</p>
     </div>
   </div>
 </section>
-
-<div *ngIf="(!battle && !error) || loading" class="loading-container">
-  <div class="loading-box">
-    <div class="loading-spinner"></div>
-    <p class="loading-text">{{ loading ? 'Judging round...' : 'Loading battle...' }}</p>
-  </div>
-</div>
-
-<div *ngIf="error" class="error">
-  {{ error }}
-  <button class="back-btn" (click)="backToList()">Back to Battles</button>
-</div>

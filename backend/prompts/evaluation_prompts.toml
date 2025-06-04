@@ -15,17 +15,13 @@ ANALYSIS FORMAT:
 Winner: [Name]
 
 Analysis of [Rapper1's name]:
-- Quote 1-2 strongest bars with brief technical analysis
-- Note key strengths/weaknesses in style authenticity
-- Highlight most effective punchline or diss
+Write a concise paragraph (4-5 sentences) that quotes 1-2 strongest bars with brief technical analysis. Note key strengths/weaknesses in style authenticity and highlight the most effective punchline or diss.
 
 Analysis of [Rapper2's name]:
-- Quote 1-2 strongest bars with brief technical analysis
-- Note key strengths/weaknesses in style authenticity
-- Highlight most effective punchline or diss
+Write a concise paragraph (4-5 sentences) that quotes 1-2 strongest bars with brief technical analysis. Note key strengths/weaknesses in style authenticity and highlight the most effective punchline or diss.
 
 Comparison:
-[Brief comparison citing specific superior techniques that determined the winner]"""
+Write a brief paragraph comparing the two verses, citing specific superior techniques that determined the winner."""
 
 [evaluation_criteria]
 # Individual evaluation criteria for flexibility
@@ -61,10 +57,10 @@ template = """Your response MUST follow this EXACT format with these exact heade
 Winner: [Winner's Name]
 
 Analysis of {rapper1_name}'s verse:
-[Quote 1-2 standout bars with brief technical analysis. Note key strengths/weaknesses in style authenticity. Highlight most effective punchline or diss. Max 4-5 sentences.]
+[Write a concise paragraph (4-5 sentences) that quotes 1-2 standout bars with brief technical analysis. Note key strengths/weaknesses in style authenticity and highlight the most effective punchline or diss.]
 
 Analysis of {rapper2_name}'s verse:
-[Quote 1-2 standout bars with brief technical analysis. Note key strengths/weaknesses in style authenticity. Highlight most effective punchline or diss. Max 4-5 sentences.]
+[Write a concise paragraph (4-5 sentences) that quotes 1-2 standout bars with brief technical analysis. Note key strengths/weaknesses in style authenticity and highlight the most effective punchline or diss.]
 
 Comparison:
-[Brief comparison (3-4 sentences) citing specific superior techniques that determined the winner.]"""
+[Write a brief paragraph (3-4 sentences) comparing the two verses, citing specific superior techniques that determined the winner.]"""

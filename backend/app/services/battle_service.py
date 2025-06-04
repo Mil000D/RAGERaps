@@ -44,81 +44,6 @@ def get_previous_verses(battle, round_number):
                 })
     return previous_verses
 
-
-def _clean_judgment_feedback(feedback: str, winner: str) -> str:
-    """
-    Clean up judgment feedback by removing redundant winner declarations.
-
-    Args:
-        feedback: Original feedback text
-        winner: Name of the winner
-
-    Returns:
-        str: Cleaned feedback text
-    """
-    # Check for improperly formatted winner declaration (no delimiter after name)
-    winner_header_match = feedback.lower().startswith(f"winner: {winner.lower()}")
-    if winner_header_match:
-        # Find where the winner name ends
-        winner_end_pos = feedback.lower().find(winner.lower()) + len(winner)
-
-        # If there's no delimiter after the winner name, add a period and newline
-        if winner_end_pos < len(feedback) and feedback[winner_end_pos] != '\n' and feedback[winner_end_pos] != '.':
-            # Insert delimiter after winner name
-            feedback = feedback[:winner_end_pos] + ".\n\n" + feedback[winner_end_pos:].lstrip()
-
-    # Format the sections consistently
-    sections = {
-        "Analysis of": "\n\nAnalysis of",
-        "Comparison:": "\n\nComparison:"
-    }
-
-    for section, formatted in sections.items():
-        pos = feedback.find(section)
-        if pos > 0:
-            # Ensure there's proper formatting before section headers
-            feedback = feedback[:pos] + formatted + feedback[pos+len(section):]
-
-    # Remove winner declaration from the beginning if present
-    if feedback.lower().startswith(f"winner: {winner.lower()}"):
-        # Find the first sentence end after winner declaration and remove everything before it
-        first_sentence_end = feedback.find(".", feedback.lower().find(winner.lower()))
-        if first_sentence_end > 0:
-            feedback = feedback[first_sentence_end + 1:].strip()
-
-    # Extract and clean the comparison section
-    comparison_pos = feedback.lower().find("comparison:")
-    if comparison_pos > 0:
-        # Look for "Winner:" or "[winner] wins" phrases in the comparison section
-        comparison_text = feedback[comparison_pos + len("Comparison:"):]
-
-        # Patterns to look for in the comparison section
-        winner_patterns = [
-            f"winner: {winner}",
-            f"the winner is {winner}",
-            f"{winner} wins",
-            f"{winner} is the winner"
-        ]
-
-        for pattern in winner_patterns:
-            pattern_pos = comparison_text.lower().find(pattern.lower())
-            if pattern_pos > 0:
-                # Find the last complete sentence before the winner declaration
-                last_period = comparison_text.rfind(".", 0, pattern_pos)
-                if last_period > 0:
-                    # Keep only the text up to that sentence
-                    clean_comparison = comparison_text[:last_period + 1].strip()
-
-                    # Replace the original comparison text with the cleaned version
-                    feedback = feedback[:comparison_pos + len("Comparison:")] + " " + clean_comparison
-                    break
-
-    # Ensure feedback doesn't end with multiple periods
-    feedback = feedback.rstrip(".") + "."
-
-    return feedback
-
-
 async def judge_round_ai(battle, current_round) -> JudgmentCreate:
     """
     Use AI to judge a battle round.
@@ -143,8 +68,6 @@ async def judge_round_ai(battle, current_round) -> JudgmentCreate:
             rapper2_style=battle.style2
         )
 
-        logger.info(f"Round {current_round.round_number} judged by AI. Winner: {winner}")
-
         return JudgmentCreate(
             round_id=current_round.id,
             winner=winner,
@@ -160,13 +83,11 @@ async def judge_round_ai(battle, current_round) -> JudgmentCreate:
             rapper2_name=battle.rapper2_name,
             winner=winner
         )
-        # Clean up the default feedback
-        cleaned_feedback = _clean_judgment_feedback(feedback, winner)
 
         return JudgmentCreate(
             round_id=current_round.id,
             winner=winner,
-            feedback=cleaned_feedback
+            feedback=feedback
         )
 
 
