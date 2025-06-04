@@ -25,10 +25,13 @@
           {{ battle.status === 'completed' ? 'Completed' : 'In Progress' }}
         </span>
       </div>
+    </div>
 
-      <div *ngIf="battle.winner" class="winner-announcement">
-        Winner: {{ battle.winner }}
-      </div>
+    <div *ngIf="battle.winner && battle.status === 'completed'" class="battle-winner-announcement">
+      <div class="winner-crown">👑</div>
+      <h2>BATTLE CHAMPION</h2>
+      <div class="champion-name">{{ battle.winner }}</div>
+      <div class="final-score">Final Score: {{ battle.winner === battle.rapper1_name ? rapper1Wins : rapper2Wins }} - {{ battle.winner === battle.rapper1_name ? rapper2Wins : rapper1Wins }}</div>
     </div>
 
     <div class="battle-rounds">
@@ -145,7 +148,16 @@
   </div>
 
   <div class="battle-actions">
-    <button class="back-btn" (click)="backToList()">Back to Battles</button>
+    <button class="back-btn" (click)="backToList()">
+      <i class="fas fa-repeat"></i> Return to Battle Arena
+    </button>
+  </div>
+
+  <div *ngIf="battle.winner && battle.status === 'completed'" class="battle-winner-announcement bottom-winner">
+    <div class="winner-crown">👑</div>
+    <h2>BATTLE CHAMPION</h2>
+    <div class="champion-name">{{ battle.winner }}</div>
+    <div class="final-score">Final Score: {{ battle.winner === battle.rapper1_name ? rapper1Wins : rapper2Wins }} - {{ battle.winner === battle.rapper1_name ? rapper2Wins : rapper1Wins }}</div>
   </div>
 
   <div class="loading-container" *ngIf="loading">
