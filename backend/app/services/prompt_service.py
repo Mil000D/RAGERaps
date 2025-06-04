@@ -102,7 +102,7 @@ class PromptService:
             category: Prompt category (battle, rapper, evaluation, system)
             key: Prompt key within the category
             subkey: Optional subkey for nested prompts
-            
+
         Returns:
             PromptTemplate: The requested prompt template
             

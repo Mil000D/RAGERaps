@@ -5,14 +5,13 @@ These endpoints allow you to create and manage rap battles with a simplified "Be
 Battles can be generated with verses only, allowing the user to choose between AI judgment
 or manually selecting a winner. A rapper wins after winning 2 rounds.
 """
-from typing import Dict, List
+from typing import List
 from uuid import UUID
-
-from fastapi import APIRouter, Body, HTTPException, Path, status
 
 from app.models.battle import BattleCreate, BattleResponse
 from app.models.judgment import JudgmentCreate
 from app.services.battle_service import battle_service
+from fastapi import APIRouter, Body, HTTPException, Path, status
 
 router = APIRouter(prefix="/battles", tags=["battles"])
 
@@ -222,14 +221,15 @@ async def judge_round_user(
     - The winner must be one of the two rappers in the battle
     """
     # Ensure the round_id in the path matches the round_id in the judgment
-    if judgment.round_id != round_id:
-        judgment.round_id = round_id
+    judgment.round_id = round_id
 
+    # Call the battle service to process the user judgment
     success, battle = await battle_service.judge_round(battle_id, round_id, judgment)
+
     if not success or not battle:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not judge round. Make sure both rappers have verses in this round."
+            detail="Could not judge round. Make sure both rappers have verses in this round and the round hasn't already been judged."
         )
 
     return battle
