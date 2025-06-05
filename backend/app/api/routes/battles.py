@@ -89,7 +89,7 @@ async def list_battles():
     Returns a list of all battles, including their current state, rounds, and verses.
     Battles are ordered from newest to oldest.
     """
-    return await battle_service.list_battles()
+    return battle_service.list_battles()
 
 
 @router.get(
@@ -117,7 +117,7 @@ async def get_battle(
 
     If the battle is not found, returns a 404 error.
     """
-    battle = await battle_service.get_battle(battle_id)
+    battle = battle_service.get_battle(battle_id)
     if not battle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -165,14 +165,19 @@ async def judge_round_ai(
 
     This operation may take some time to complete as it involves complex AI analysis.
     """
-    success, battle = await battle_service.judge_round(battle_id, round_id)
-    if not success or not battle:
+    try:
+        battle = await battle_service.judge_round(battle_id, round_id)
+        if not battle:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not judge round. Make sure both rappers have verses in this round.",
+            )
+        return battle
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not judge round. Make sure both rappers have verses in this round.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error judging round: {str(e)}",
         )
-
-    return battle
 
 
 @router.post(
@@ -226,12 +231,16 @@ async def judge_round_user(
     judgment.round_id = round_id
 
     # Call the battle service to process the user judgment
-    success, battle = await battle_service.judge_round(battle_id, round_id, judgment)
-
-    if not success or not battle:
+    try:
+        battle = await battle_service.judge_round(battle_id, round_id, judgment)
+        if not battle:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not judge round. Make sure both rappers have verses in this round and the round hasn't already been judged.",
+            )
+        return battle
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not judge round. Make sure both rappers have verses in this round and the round hasn't already been judged.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing user judgment: {str(e)}",
         )
-
-    return battle

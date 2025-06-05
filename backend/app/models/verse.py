@@ -2,16 +2,9 @@
 Verse model definitions.
 """
 
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
-
-
-def utc_now():
-    """Get current UTC time with timezone information."""
-    return datetime.now(timezone.utc)
 
 
 class Verse(BaseModel):
@@ -40,41 +33,3 @@ class Verse(BaseModel):
             "I flow like water, you're just a drought\nMy rhymes hit harder, no doubt\nWhile you're stuck in the past, I innovate\nYour tired flow is something I can't tolerate"
         ],
     )
-    sources: List[Dict[str, str]] = Field(
-        default_factory=list,
-        description="Sources used for the verse - references to information used to generate the verse",
-    )
-    style_elements: List[str] = Field(
-        default_factory=list,
-        description="Style elements used in the verse - specific rap style techniques used",
-        examples=[["Flow", "Wordplay", "Metaphors", "Punchlines"]],
-    )
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        description="Creation timestamp - when the verse was generated",
-    )
-    feedback: Optional[str] = Field(
-        default=None,
-        description="Feedback on the verse - comments or critique about the verse quality",
-    )
-
-    model_config = {
-        "from_attributes": True,
-        "json_schema_extra": {
-            "example": {
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "round_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "rapper_name": "Kendrick Lamar",
-                "content": "I flow like water, you're just a drought\nMy rhymes hit harder, no doubt\nWhile you're stuck in the past, I innovate\nYour tired flow is something I can't tolerate",
-                "sources": [
-                    {
-                        "url": "https://en.wikipedia.org/wiki/Kendrick_Lamar",
-                        "title": "Kendrick Lamar - Wikipedia",
-                    }
-                ],
-                "style_elements": ["Flow", "Wordplay", "Metaphors"],
-                "created_at": "2023-01-01T00:00:00.000Z",
-                "feedback": "Strong use of metaphors and excellent flow.",
-            }
-        },
-    }

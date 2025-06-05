@@ -2,10 +2,8 @@
 Artist retrieval tool for accessing vector store data during agent execution.
 """
 
-import asyncio
 import logging
-from typing import Dict, List, Optional, Any, Type
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
 from langchain_core.tools import BaseTool
 from langchain_core.documents import Document
@@ -15,41 +13,42 @@ from app.services.vector_store_service import vector_store_service
 logger = logging.getLogger(__name__)
 
 
-class ArtistRetrievalInput(BaseModel):
-    """Input schema for artist retrieval tool."""
-
-    artist_name: str = Field(
-        description="Name of the artist to retrieve lyrics and style information for"
-    )
-    style: Optional[str] = Field(
-        default=None, description="Musical style/genre to focus the search on"
-    )
-    k: Optional[int] = Field(
-        default=5, description="Number of documents to retrieve (max 10)"
-    )
-    include_similar: Optional[bool] = Field(
-        default=True,
-        description="Whether to include similar artists if specific artist data is limited",
-    )
-
-
 class ArtistRetrievalTool(BaseTool):
     """Tool for retrieving artist lyrics and style information from the vector store."""
 
     name: str = "retrieve_artist_data"
-    description: str = """Retrieve lyrics and style information for a specific artist from the vector database.
+    description: str = "Retrieve artist lyrics and style information from the vector store. Use this to get rap style data and lyrics for specific artists or similar artists in a given style."
 
-    This tool searches the artists_lyrics collection for:
-    - Complete lyrics content from the specified artist
-    - Style characteristics and genre information
-    - Similar artists' examples if the specific artist has limited data
+    def _run(
+        self,
+        artist_name: str,
+        style: Optional[str] = None,
+        k: Optional[int] = 5,
+        include_similar: Optional[bool] = True,
+    ) -> str:
+        """
+        Synchronous implementation of the artist retrieval tool.
 
-    Use this when you need authentic lyrical content, style examples, or genre information
-    to generate more accurate and style-appropriate rap verses or make informed judgments.
+        Args:
+            artist_name: Name of the artist to retrieve data for
+            style: Optional style/genre to focus the search
+            k: Number of documents to retrieve
+            include_similar: Whether to include similar artists
 
-    Input should include the artist name and optionally the style/genre to focus on."""
+        Returns:
+            Formatted string with artist data and lyrics
+        """
+        import asyncio
 
-    args_schema: Type[BaseModel] = ArtistRetrievalInput
+        # Run the async version
+        try:
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(
+                self._arun(artist_name, style, k, include_similar)
+            )
+        except RuntimeError:
+            # No event loop running, create one
+            return asyncio.run(self._arun(artist_name, style, k, include_similar))
 
     async def _arun(
         self,
@@ -81,8 +80,7 @@ class ArtistRetrievalTool(BaseTool):
                 search_query = f"{artist_name} rap lyrics style"
 
             # Search for artist-specific content
-            artist_filter = {"artist": artist_name}
-            artist_docs = await self._safe_search(search_query, k, artist_filter)
+            artist_docs = await self._safe_search(search_query, k)
 
             # Search for similar artists if needed and requested
             similar_docs = []
@@ -93,7 +91,7 @@ class ArtistRetrievalTool(BaseTool):
                 else:
                     style_query = "rap lyrics style flow technique"
 
-                all_docs = await self._safe_search(style_query, remaining_k * 2, None)
+                all_docs = await self._safe_search(style_query, remaining_k * 2)
                 # Filter out the original artist
                 similar_docs = [
                     doc
@@ -108,34 +106,19 @@ class ArtistRetrievalTool(BaseTool):
             logger.error(f"Error in artist retrieval tool: {str(e)}")
             return f"Error retrieving data for {artist_name}: {str(e)}"
 
-    def _run(
-        self,
-        artist_name: str,
-        style: Optional[str] = None,
-        k: Optional[int] = 5,
-        include_similar: Optional[bool] = True,
-    ) -> str:
-        """Sync wrapper for async implementation."""
-        return asyncio.run(self._arun(artist_name, style, k, include_similar))
-
-    async def _safe_search(
-        self, query: str, k: int, filter_dict: Optional[Dict[str, Any]]
-    ) -> List[Document]:
+    async def _safe_search(self, query: str, k: int) -> List[Document]:
         """
         Perform a safe vector store search with error handling.
 
         Args:
             query: Search query
             k: Number of results
-            filter_dict: Optional metadata filters
 
         Returns:
             List of retrieved documents
         """
         try:
-            results = await vector_store_service.search_artists(
-                query=query, k=k, filter_dict=filter_dict
-            )
+            results = await vector_store_service.search_artists(query=query, k=k)
             return results
         except Exception as e:
             logger.warning(f"Vector store search failed: {str(e)}")

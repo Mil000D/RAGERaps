@@ -3,7 +3,7 @@
 [tool_usage]
 # Instructions for using various tools
 artist_retrieval = "Use the retrieve_artist_data tool to get authentic lyrical content and style information"
-mcp_tools_research = "Use any of these tools if they are available: search_internet, search_wikipedia
+mcp_tools_research = "Use any of these tools if they are available: search_internet, search_wikipedia"
 style_tools = "Use style tools to get information about rap styles and their characteristics"
 
 [common_instructions]

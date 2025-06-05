@@ -2,14 +2,7 @@
 Centralized prompt management service for RAGERaps application.
 """
 
-try:
-    import tomllib
-except ImportError:
-    # Fallback for Python < 3.11
-    try:
-        import tomli as tomllib
-    except ImportError:
-        import toml as tomllib
+import tomllib
 
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -22,7 +15,6 @@ class PromptTemplate(BaseModel):
     """Model for prompt templates with variable substitution."""
 
     template: str
-    variables: List[str] = Field(default_factory=list)
 
     def format(self, **kwargs) -> str:
         """
@@ -151,20 +143,6 @@ class PromptService:
         except KeyError:
             raise ValueError(f"Prompt not found: {category}.{key}.{subkey or ''}")
 
-    def get_fallback_verse(self, rapper_position: str, **kwargs) -> str:
-        """
-        Get a formatted fallback verse for a rapper.
-
-        Args:
-            rapper_position: Either 'rapper1' or 'rapper2'
-            **kwargs: Variables for template formatting
-
-        Returns:
-            str: Formatted fallback verse
-        """
-        template = self.get_prompt("battle", "fallback_verses", rapper_position)
-        return template.format(**kwargs)
-
     def get_rapper_system_message(
         self,
         rapper_name: str,
@@ -276,25 +254,6 @@ class PromptService:
         """
         template = self.get_prompt("evaluation", "judge_input_template", "template")
         return template.format(**kwargs)
-
-    def get_default_judgment(self, **kwargs) -> str:
-        """
-        Get formatted default judgment.
-
-        Args:
-            **kwargs: Variables for template formatting
-
-        Returns:
-            str: Formatted default judgment
-        """
-        template = self.get_prompt("battle", "default_judgment", "template")
-        return template.format(**kwargs)
-
-    def reload_prompts(self) -> None:
-        """Reload all prompt configurations from files."""
-        self._config = None
-        self.get_prompt.cache_clear()  # Clear the LRU cache
-        self._load_prompts()
 
 
 # Create a global prompt service instance

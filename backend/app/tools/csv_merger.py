@@ -8,7 +8,6 @@ It merges based on Link/ALink columns and filters for English language songs onl
 import pandas as pd
 import argparse
 import sys
-import re
 from pathlib import Path
 from typing import Optional
 
@@ -20,35 +19,6 @@ class CSVMerger:
         self.artists_df: Optional[pd.DataFrame] = None
         self.songs_df: Optional[pd.DataFrame] = None
         self.merged_df: Optional[pd.DataFrame] = None
-
-    @staticmethod
-    def clean_lyrics_text(text: str) -> str:
-        """
-        Clean lyrics text by removing newline characters and handling special characters.
-
-        Args:
-            text: Raw lyrics text that may contain newlines
-
-        Returns:
-            str: Cleaned lyrics text suitable for CSV storage
-        """
-        if not isinstance(text, str):
-            return str(text) if text is not None else ""
-
-        # Remove all types of newline characters
-        cleaned = re.sub(r"[\r\n]+", " ", text)
-
-        # Replace multiple spaces with single space
-        cleaned = re.sub(r"\s+", " ", cleaned)
-
-        # Strip leading and trailing whitespace
-        cleaned = cleaned.strip()
-
-        # Handle quotes by escaping them properly for CSV
-        # pandas.to_csv will handle this automatically, but we ensure consistency
-        cleaned = cleaned.replace('"', '""')
-
-        return cleaned
 
     def load_artists_csv(self, file_path: str) -> None:
         """
@@ -201,16 +171,6 @@ class CSVMerger:
         except Exception as e:
             raise Exception(f"Error saving merged CSV: {str(e)}")
 
-    def get_summary(self) -> dict:
-        """Get a summary of the merging process."""
-        return {
-            "artists_loaded": len(self.artists_df)
-            if self.artists_df is not None
-            else 0,
-            "songs_loaded": len(self.songs_df) if self.songs_df is not None else 0,
-            "merged_records": len(self.merged_df) if self.merged_df is not None else 0,
-        }
-
 
 def main():
     """Main function to run the CSV merger from command line."""
@@ -250,16 +210,6 @@ def main():
         # Save result
         print("Saving merged data...")
         merger.save_merged_csv(args.output_csv)
-
-        # Print summary
-        summary = merger.get_summary()
-        print("\n" + "=" * 50)
-        print("MERGE SUMMARY")
-        print("=" * 50)
-        print(f"Artists loaded: {summary['artists_loaded']}")
-        print(f"Songs loaded: {summary['songs_loaded']}")
-        print(f"Final merged records: {summary['merged_records']}")
-        print(f"Output file: {args.output_csv}")
 
     except Exception as e:
         print(f"Error: {str(e)}")

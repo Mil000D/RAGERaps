@@ -23,7 +23,6 @@ class RapperState(TypedDict):
     rapper_name: str
     opponent_name: str
     style: str
-    context: Optional[Dict]
     cached_data: Optional[Dict[str, RapperCacheData]]
     round_number: int
     is_first_round: bool
@@ -37,19 +36,13 @@ class RapperAgent:
         # Initialize the LLM
         self.llm = ChatOpenAI(
             model="gpt-4o-mini",
-            temperature=0.7,
+            temperature=0.9,
             api_key=settings.openai_api_key,
             streaming=False,
         )
 
         # Initialize tools with artist retrieval tool
         self.tools = [artist_retrieval_tool]
-
-        # # Add style tools
-        # self.tools.extend([
-        #     style_tool.get_style,
-        #     style_tool.search_styles
-        # ])
 
         # Initialize MCP tools (will be loaded asynchronously)
         self.mcp_tools = []
@@ -157,7 +150,6 @@ class RapperAgent:
         self,
         rapper_name: str,
         opponent_name: str,
-        style: str,
         is_first_round: bool,
         cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> Dict[str, RapperCacheData]:
@@ -167,7 +159,6 @@ class RapperAgent:
         Args:
             rapper_name: Name of the rapper
             opponent_name: Name of the opponent
-            style: Rap style
             is_first_round: Whether this is the first round
             cached_data: Existing cached data
 
@@ -241,7 +232,7 @@ class RapperAgent:
             if wikipedia_tool:
                 try:
                     wikipedia_result = await wikipedia_tool.ainvoke(
-                        {"rapper_name": rapper_name}
+                        {"query": rapper_name}
                     )
                     rapper_data.wikipedia_info = str(wikipedia_result)
                 except Exception as e:
@@ -251,7 +242,7 @@ class RapperAgent:
             if internet_tool:
                 try:
                     internet_result = await internet_tool.ainvoke(
-                        {"rapper_name": rapper_name}
+                        {"query": rapper_name}
                     )
                     rapper_data.internet_search_info = str(internet_result)
                 except Exception as e:
@@ -310,7 +301,6 @@ class RapperAgent:
             rapper_cache_data = await self._get_or_fetch_rapper_data(
                 rapper_name=rapper_name,
                 opponent_name=opponent_name,
-                style=style,
                 is_first_round=is_first_round,
                 cached_data=cached_data,
             )

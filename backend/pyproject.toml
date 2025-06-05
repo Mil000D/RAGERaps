@@ -27,3 +27,8 @@ dependencies = [
     "chardet>=5.2.0",
     "toml>=0.10.2",
 ]
+
+[dependency-groups]
+dev = [
+    "vulture>=2.14",
+]

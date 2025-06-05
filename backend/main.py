@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from app.api.router import api_router
-from app.db.database import db
 from app.agents.rapper_agent import initialize_rapper_agent
 
 # Load environment variables
@@ -25,8 +24,6 @@ async def lifespan(app: FastAPI):
     Args:
         app: FastAPI application
     """
-    # Initialize the database
-    await db.initialize()
 
     # Initialize the rapper agent with MCP tools
     try:

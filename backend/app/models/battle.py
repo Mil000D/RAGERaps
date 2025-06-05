@@ -2,18 +2,12 @@
 Battle model definitions.
 """
 
-from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
 from app.models.round import Round
-
-
-def utc_now():
-    """Get current UTC time with timezone information."""
-    return datetime.now(timezone.utc)
 
 
 class BattleBase(BaseModel):
@@ -50,17 +44,6 @@ class BattleCreate(BattleBase):
         examples=["Drake", "Snoop Dogg", "Nas"],
     )
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "style1": "Conscious Rap",
-                "style2": "Trap",
-                "rapper1_name": "Kendrick Lamar",
-                "rapper2_name": "Drake",
-            }
-        }
-    }
-
 
 class BattleDB(BattleBase):
     """
@@ -76,14 +59,6 @@ class BattleDB(BattleBase):
     rounds: List[Round] = Field(
         default_factory=list,
         description="Battle rounds - contains all rounds in the battle",
-    )
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        description="Creation timestamp - when the battle was created",
-    )
-    updated_at: datetime = Field(
-        default_factory=utc_now,
-        description="Last update timestamp - when the battle was last updated",
     )
     status: str = Field(
         default="in_progress",
@@ -115,24 +90,3 @@ class BattleResponse(BattleDB):
     This model is used when returning battle data to the client.
     It includes all fields from BattleDB and is configured to work with ORM models.
     """
-
-    model_config = {
-        "from_attributes": True,
-        "json_schema_extra": {
-            "example": {
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "style1": "Conscious Rap",
-                "style2": "Trap",
-                "rapper1_name": "Kendrick Lamar",
-                "rapper2_name": "Drake",
-                "rounds": [],
-                "created_at": "2023-01-01T00:00:00.000Z",
-                "updated_at": "2023-01-01T00:00:00.000Z",
-                "status": "in_progress",
-                "current_round": 1,
-                "rapper1_wins": 0,
-                "rapper2_wins": 0,
-                "winner": None,
-            }
-        },
-    }
