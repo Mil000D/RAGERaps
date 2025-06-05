@@ -17,7 +17,7 @@ class ArtistRetrievalTool(BaseTool):
     """Tool for retrieving artist lyrics and style information from the vector store."""
 
     name: str = "retrieve_artist_data"
-    description: str = "Retrieve artist lyrics and style information from the vector store. Use this to get rap style data and lyrics for specific artists or similar artists in a given style."
+    description: str = "Retrieve artist lyrics and style information from the vector store. Use this to get rap style data and lyrics for specific artists or similar artists in a given style. IMPORTANT: Always pass the 'style' parameter when you know the rap style context (e.g., aggressive, melodic, storytelling, etc.) to get more relevant results."
 
     def _run(
         self,
@@ -161,10 +161,10 @@ class ArtistRetrievalTool(BaseTool):
                 # Extract full lyrics from metadata
                 full_lyrics = doc.metadata.get("lyric", "")
                 if full_lyrics:
-                    # Show first 300 characters of lyrics
+                    # Show first 3000 characters of lyrics
                     lyrics_preview = (
-                        full_lyrics[:300] + "..."
-                        if len(full_lyrics) > 300
+                        full_lyrics[:3000] + "..."
+                        if len(full_lyrics) > 3000
                         else full_lyrics
                     )
                     result_parts.append(f"\nLyrics Sample {i}:")
@@ -205,8 +205,8 @@ class ArtistRetrievalTool(BaseTool):
                 full_lyrics = doc.metadata.get("lyric", "")
                 if full_lyrics:
                     lyrics_preview = (
-                        full_lyrics[:200] + "..."
-                        if len(full_lyrics) > 200
+                        full_lyrics[:3000] + "..."
+                        if len(full_lyrics) > 3000
                         else full_lyrics
                     )
                     result_parts.append(f"\n{artist} Style Example:")

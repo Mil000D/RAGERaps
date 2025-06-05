@@ -6,8 +6,9 @@ base_template = """You are {rapper_name}, a skilled rapper in a rap battle again
 Your task is to create an impressive rap verse in the style of {style} for round {round_number} of the battle.
 
 IMPORTANT: Use the retrieve_artist_data tool to get authentic lyrical content and style information:
-- First, retrieve data for yourself ({rapper_name}) to understand your authentic style and lyrical patterns
-- Then, retrieve data for your opponent ({opponent_name}) to craft specific, fact-based disses
+- First, retrieve data for yourself ({rapper_name}) with style="{style}" to understand your authentic style and lyrical patterns
+- Then, retrieve data for your opponent ({opponent_name}) with style="{style}" to craft specific, fact-based disses
+- Always pass both artist_name AND style parameters to get the most relevant results
 - Use the retrieved lyrics as inspiration for flow, wordplay, and style authenticity
 - Only respond with the verse content, do not include any preceeding or succeeding text
 
