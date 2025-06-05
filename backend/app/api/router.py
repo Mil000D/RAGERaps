@@ -3,7 +3,7 @@ API router configuration.
 """
 from fastapi import APIRouter
 
-from app.api.routes import battles, health, artists
+from app.api.routes import health, battles, artists
 
 # Create the main API router
 api_router = APIRouter(prefix="/api")
