@@ -141,10 +141,7 @@ class RapperAgent:
         graph_builder.add_conditional_edges(
             "rapper",
             tools_condition,
-            {
-                "tools": "tools",
-                END: END
-            },
+            {"tools": "tools", END: END},
         )
 
         # After tools are executed, go back to rapper for final response
@@ -231,25 +228,19 @@ class RapperAgent:
         try:
             # Try to find the search tools
             wikipedia_tool = None
-            rapper_wikipedia_tool = None
             internet_tool = None
-            rapper_info_tool = None
 
             for tool in self.mcp_tools:
                 tool_name = getattr(tool, "name", "")
                 if tool_name == "search_wikipedia":
                     wikipedia_tool = tool
-                elif tool_name == "search_rapper_wikipedia":
-                    rapper_wikipedia_tool = tool
                 elif tool_name == "search_internet":
                     internet_tool = tool
-                elif tool_name == "search_rapper_info":
-                    rapper_info_tool = tool
 
             # Fetch Wikipedia information
-            if rapper_wikipedia_tool:
+            if wikipedia_tool:
                 try:
-                    wikipedia_result = await rapper_wikipedia_tool.ainvoke(
+                    wikipedia_result = await wikipedia_tool.ainvoke(
                         {"rapper_name": rapper_name}
                     )
                     rapper_data.wikipedia_info = str(wikipedia_result)
@@ -257,9 +248,9 @@ class RapperAgent:
                     print(f"Error fetching Wikipedia data for {rapper_name}: {e}")
 
             # Fetch internet search information
-            if rapper_info_tool:
+            if internet_tool:
                 try:
-                    internet_result = await rapper_info_tool.ainvoke(
+                    internet_result = await internet_tool.ainvoke(
                         {"rapper_name": rapper_name}
                     )
                     rapper_data.internet_search_info = str(internet_result)

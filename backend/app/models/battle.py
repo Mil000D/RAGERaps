@@ -1,6 +1,7 @@
 """
 Battle model definitions.
 """
+
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -21,13 +22,13 @@ class BattleBase(BaseModel):
     style1: str = Field(
         ...,
         description="The rap style for the first rapper",
-        examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"]
+        examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"],
     )
 
     style2: str = Field(
         ...,
         description="The rap style for the second rapper",
-        examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"]
+        examples=["Old School", "Gangsta Rap", "Trap", "Conscious Rap", "Boom Bap"],
     )
 
 
@@ -41,12 +42,12 @@ class BattleCreate(BattleBase):
     rapper1_name: str = Field(
         ...,
         description="Name of the first rapper",
-        examples=["Kendrick Lamar", "Jay-Z", "Eminem"]
+        examples=["Kendrick Lamar", "Jay-Z", "Eminem"],
     )
     rapper2_name: str = Field(
         ...,
         description="Name of the second rapper",
-        examples=["Drake", "Snoop Dogg", "Nas"]
+        examples=["Drake", "Snoop Dogg", "Nas"],
     )
 
     model_config = {
@@ -55,7 +56,7 @@ class BattleCreate(BattleBase):
                 "style1": "Conscious Rap",
                 "style2": "Trap",
                 "rapper1_name": "Kendrick Lamar",
-                "rapper2_name": "Drake"
+                "rapper2_name": "Drake",
             }
         }
     }
@@ -69,56 +70,41 @@ class BattleDB(BattleBase):
     including generated fields like ID and timestamps.
     """
 
-    id: UUID = Field(
-        default_factory=uuid4,
-        description="Unique battle ID"
-    )
-    rapper1_name: str = Field(
-        ...,
-        description="Name of the first rapper"
-    )
-    rapper2_name: str = Field(
-        ...,
-        description="Name of the second rapper"
-    )
+    id: UUID = Field(default_factory=uuid4, description="Unique battle ID")
+    rapper1_name: str = Field(..., description="Name of the first rapper")
+    rapper2_name: str = Field(..., description="Name of the second rapper")
     rounds: List[Round] = Field(
         default_factory=list,
-        description="Battle rounds - contains all rounds in the battle"
+        description="Battle rounds - contains all rounds in the battle",
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        description="Creation timestamp - when the battle was created"
+        description="Creation timestamp - when the battle was created",
     )
     updated_at: datetime = Field(
         default_factory=utc_now,
-        description="Last update timestamp - when the battle was last updated"
+        description="Last update timestamp - when the battle was last updated",
     )
     status: str = Field(
         default="in_progress",
         description="Battle status - can be 'in_progress' or 'completed'",
-        examples=["in_progress", "completed"]
+        examples=["in_progress", "completed"],
     )
     current_round: int = Field(
         default=1,
         description="Current round number - starts at 1 and goes up to 3",
         ge=1,
-        le=3
+        le=3,
     )
     rapper1_wins: int = Field(
-        default=0,
-        description="Number of rounds won by the first rapper",
-        ge=0,
-        le=3
+        default=0, description="Number of rounds won by the first rapper", ge=0, le=3
     )
     rapper2_wins: int = Field(
-        default=0,
-        description="Number of rounds won by the second rapper",
-        ge=0,
-        le=3
+        default=0, description="Number of rounds won by the second rapper", ge=0, le=3
     )
     winner: Optional[str] = Field(
         default=None,
-        description="Winner of the battle - set when a rapper wins 2 rounds or after all 3 rounds are completed"
+        description="Winner of the battle - set when a rapper wins 2 rounds or after all 3 rounds are completed",
     )
 
 
@@ -146,7 +132,7 @@ class BattleResponse(BattleDB):
                 "current_round": 1,
                 "rapper1_wins": 0,
                 "rapper2_wins": 0,
-                "winner": None
+                "winner": None,
             }
-        }
+        },
     }

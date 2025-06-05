@@ -1,6 +1,7 @@
 """
 Parallel execution workflow for rap battle agents using LangGraph with tool-based RAG integration.
 """
+
 from typing import Annotated, Dict, List, Optional, TypedDict
 import operator
 
@@ -12,6 +13,7 @@ from app.services.data_cache_service import RapperCacheData
 
 class BattleRoundState(TypedDict):
     """State for a battle round with parallel verse generation."""
+
     round_id: str
     rapper1_name: str
     rapper2_name: str
@@ -33,7 +35,7 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
             style=state["style1"],
             round_number=state["round_number"],
             previous_verses=state["previous_verses"],
-            cached_data=state.get("cached_data")
+            cached_data=state.get("cached_data"),
         )
     except Exception:
         # If there's an error, use a default verse
@@ -41,12 +43,7 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
 
     # Return the verse in the format expected by the verses list
     return {
-        "verses": [
-            {
-                "rapper_name": state["rapper1_name"],
-                "content": verse_content
-            }
-        ]
+        "verses": [{"rapper_name": state["rapper1_name"], "content": verse_content}]
     }
 
 
@@ -59,21 +56,15 @@ async def rapper2_verse_node(state: BattleRoundState) -> BattleRoundState:
             style=state["style2"],
             round_number=state["round_number"],
             previous_verses=state["previous_verses"],
-            cached_data=state.get("cached_data")
+            cached_data=state.get("cached_data"),
         )
     except Exception:
         # If there's an error, use a default verse
         verse_content = "Error generating verse."
 
-
     # Return the verse in the format expected by the verses list
     return {
-        "verses": [
-            {
-                "rapper_name": state["rapper2_name"],
-                "content": verse_content
-            }
-        ]
+        "verses": [{"rapper_name": state["rapper2_name"], "content": verse_content}]
     }
 
 
@@ -123,7 +114,7 @@ async def execute_battle_round_parallel(
     style2: str,
     round_number: int,
     previous_verses: Optional[List[Dict]] = None,
-    cached_data: Optional[Dict[str, RapperCacheData]] = None
+    cached_data: Optional[Dict[str, RapperCacheData]] = None,
 ) -> Dict:
     """
     Execute a battle round with parallel agent execution and tool-based RAG integration.
@@ -154,7 +145,7 @@ async def execute_battle_round_parallel(
         "round_number": round_number,
         "previous_verses": previous_verses,
         "verses": [],
-        "cached_data": cached_data
+        "cached_data": cached_data,
     }
 
     # Execute the graph

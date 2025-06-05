@@ -1,7 +1,8 @@
 """
 Tool for retrieving rap styles from the database.
 """
-from typing import Dict, List, Optional
+
+from typing import Dict
 
 from langchain_core.tools import tool
 
@@ -10,7 +11,7 @@ from app.db.repositories.style_repo import style_repository
 
 class StyleTool:
     """Tool for retrieving rap styles."""
-    
+
     @tool
     async def get_style(self, style_name: str) -> str:
         """

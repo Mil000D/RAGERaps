@@ -1,6 +1,7 @@
 """
 Repository for battles stored in memory.
 """
+
 from typing import Dict, List, Optional
 from uuid import UUID
 
@@ -31,7 +32,7 @@ class BattleRepository:
             rapper1_name=battle_data.rapper1_name,
             rapper2_name=battle_data.rapper2_name,
             style1=battle_data.style1,
-            style2=battle_data.style2
+            style2=battle_data.style2,
         )
 
         self.battles[battle.id] = battle
@@ -73,10 +74,7 @@ class BattleRepository:
         if not battle:
             return None
 
-        new_round = Round(
-            battle_id=battle_id,
-            round_number=round_number
-        )
+        new_round = Round(battle_id=battle_id, round_number=round_number)
 
         battle.rounds.append(new_round)
         battle.current_round = round_number
@@ -114,7 +112,9 @@ class BattleRepository:
 
         return None
 
-    async def add_judgment(self, judgment: JudgmentCreate, user_submitted: bool = False) -> bool:
+    async def add_judgment(
+        self, judgment: JudgmentCreate, user_submitted: bool = False
+    ) -> bool:
         """
         Add a judgment to a round.
 

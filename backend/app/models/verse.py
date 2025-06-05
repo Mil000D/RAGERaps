@@ -1,6 +1,7 @@
 """
 Verse model definitions.
 """
+
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
@@ -21,41 +22,40 @@ class Verse(BaseModel):
     """
 
     id: UUID = Field(
-        default_factory=uuid4,
-        description="Unique verse ID - automatically generated"
+        default_factory=uuid4, description="Unique verse ID - automatically generated"
     )
     round_id: UUID = Field(
         ...,
-        description="ID of the round this verse belongs to - must be a valid UUID of an existing round"
+        description="ID of the round this verse belongs to - must be a valid UUID of an existing round",
     )
     rapper_name: str = Field(
         ...,
         description="Name of the rapper who created this verse",
-        examples=["Kendrick Lamar", "Drake"]
+        examples=["Kendrick Lamar", "Drake"],
     )
     content: str = Field(
         ...,
         description="Verse content - the actual rap lyrics",
         examples=[
             "I flow like water, you're just a drought\nMy rhymes hit harder, no doubt\nWhile you're stuck in the past, I innovate\nYour tired flow is something I can't tolerate"
-        ]
+        ],
     )
     sources: List[Dict[str, str]] = Field(
         default_factory=list,
-        description="Sources used for the verse - references to information used to generate the verse"
+        description="Sources used for the verse - references to information used to generate the verse",
     )
     style_elements: List[str] = Field(
         default_factory=list,
         description="Style elements used in the verse - specific rap style techniques used",
-        examples=[["Flow", "Wordplay", "Metaphors", "Punchlines"]]
+        examples=[["Flow", "Wordplay", "Metaphors", "Punchlines"]],
     )
     created_at: datetime = Field(
         default_factory=utc_now,
-        description="Creation timestamp - when the verse was generated"
+        description="Creation timestamp - when the verse was generated",
     )
     feedback: Optional[str] = Field(
         default=None,
-        description="Feedback on the verse - comments or critique about the verse quality"
+        description="Feedback on the verse - comments or critique about the verse quality",
     )
 
     model_config = {
@@ -67,11 +67,14 @@ class Verse(BaseModel):
                 "rapper_name": "Kendrick Lamar",
                 "content": "I flow like water, you're just a drought\nMy rhymes hit harder, no doubt\nWhile you're stuck in the past, I innovate\nYour tired flow is something I can't tolerate",
                 "sources": [
-                    {"url": "https://en.wikipedia.org/wiki/Kendrick_Lamar", "title": "Kendrick Lamar - Wikipedia"}
+                    {
+                        "url": "https://en.wikipedia.org/wiki/Kendrick_Lamar",
+                        "title": "Kendrick Lamar - Wikipedia",
+                    }
                 ],
                 "style_elements": ["Flow", "Wordplay", "Metaphors"],
                 "created_at": "2023-01-01T00:00:00.000Z",
-                "feedback": "Strong use of metaphors and excellent flow."
+                "feedback": "Strong use of metaphors and excellent flow.",
             }
-        }
+        },
     }

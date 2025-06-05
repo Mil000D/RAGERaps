@@ -5,6 +5,7 @@ These endpoints allow you to create and manage rap battles with a simplified "Be
 Battles can be generated with verses only, allowing the user to choose between AI judgment
 or manually selecting a winner. A rapper wins after winning 2 rounds.
 """
+
 from typing import List
 from uuid import UUID
 
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/battles", tags=["battles"])
     response_model=BattleResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Generate a battle with verses only",
-    response_description="The battle with verses for both rappers but without judgment"
+    response_description="The battle with verses for both rappers but without judgment",
 )
 async def generate_battle_with_verses(
     battle_data: BattleCreate = Body(
@@ -31,16 +32,16 @@ async def generate_battle_with_verses(
                 "style1": "Conscious Rap",
                 "style2": "Trap",
                 "rapper1_name": "Kendrick Lamar",
-                "rapper2_name": "Drake"
+                "rapper2_name": "Drake",
             },
             {
                 "style1": "Old School",
                 "style2": "Mumble Rap",
                 "rapper1_name": "Jay-Z",
-                "rapper2_name": "Future"
-            }
-        ]
-    )
+                "rapper2_name": "Future",
+            },
+        ],
+    ),
 ):
     """
     Generate a battle with verses for both rappers but without automatic judgment.
@@ -70,15 +71,16 @@ async def generate_battle_with_verses(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error generating battle: {str(e)}"
+            detail=f"Error generating battle: {str(e)}",
         )
+
 
 @router.get(
     "",
     response_model=List[BattleResponse],
     status_code=status.HTTP_200_OK,
     summary="List all rap battles",
-    response_description="List of all battles in the system"
+    response_description="List of all battles in the system",
 )
 async def list_battles():
     """
@@ -95,14 +97,14 @@ async def list_battles():
     response_model=BattleResponse,
     status_code=status.HTTP_200_OK,
     summary="Get a specific rap battle",
-    response_description="Detailed information about the requested battle"
+    response_description="Detailed information about the requested battle",
 )
 async def get_battle(
     battle_id: UUID = Path(
         ...,
         description="The ID of the battle to retrieve",
-        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    )
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ),
 ):
     """
     Get detailed information about a specific rap battle.
@@ -119,7 +121,7 @@ async def get_battle(
     if not battle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Battle with ID {battle_id} not found"
+            detail=f"Battle with ID {battle_id} not found",
         )
 
     return battle
@@ -130,19 +132,19 @@ async def get_battle(
     response_model=BattleResponse,
     status_code=status.HTTP_200_OK,
     summary="Judge a round using AI",
-    response_description="The updated battle with the AI judgment"
+    response_description="The updated battle with the AI judgment",
 )
 async def judge_round_ai(
     battle_id: UUID = Path(
         ...,
         description="The ID of the battle",
-        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ),
     round_id: UUID = Path(
         ...,
         description="The ID of the round to judge",
-        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    )
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ),
 ):
     """
     Judge a round of the battle using AI.
@@ -167,7 +169,7 @@ async def judge_round_ai(
     if not success or not battle:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not judge round. Make sure both rappers have verses in this round."
+            detail="Could not judge round. Make sure both rappers have verses in this round.",
         )
 
     return battle
@@ -178,7 +180,7 @@ async def judge_round_ai(
     response_model=BattleResponse,
     status_code=status.HTTP_200_OK,
     summary="Judge a round manually",
-    response_description="The updated battle with the user judgment"
+    response_description="The updated battle with the user judgment",
 )
 async def judge_round_user(
     judgment: JudgmentCreate = Body(
@@ -187,20 +189,20 @@ async def judge_round_user(
             {
                 "round_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 "winner": "Kendrick Lamar",
-                "feedback": "Kendrick's verse had better flow and more creative wordplay."
+                "feedback": "Kendrick's verse had better flow and more creative wordplay.",
             }
-        ]
+        ],
     ),
     battle_id: UUID = Path(
         ...,
         description="The ID of the battle",
-        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ),
     round_id: UUID = Path(
         ...,
         description="The ID of the round to judge",
-        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    )
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ),
 ):
     """
     Manually judge a round of the battle.
@@ -229,7 +231,7 @@ async def judge_round_user(
     if not success or not battle:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not judge round. Make sure both rappers have verses in this round and the round hasn't already been judged."
+            detail="Could not judge round. Make sure both rappers have verses in this round and the round hasn't already been judged.",
         )
 
     return battle

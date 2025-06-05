@@ -1,6 +1,7 @@
 """
 Service for managing rap battles.
 """
+
 import logging
 import random
 from typing import List, Optional, Tuple
@@ -33,16 +34,21 @@ def get_previous_verses(battle, round_number):
     for r in battle.rounds:
         if r.round_number < round_number:
             if r.rapper1_verse:
-                previous_verses.append({
-                    "rapper_name": battle.rapper1_name,
-                    "content": r.rapper1_verse.content
-                })
+                previous_verses.append(
+                    {
+                        "rapper_name": battle.rapper1_name,
+                        "content": r.rapper1_verse.content,
+                    }
+                )
             if r.rapper2_verse:
-                previous_verses.append({
-                    "rapper_name": battle.rapper2_name,
-                    "content": r.rapper2_verse.content
-                })
+                previous_verses.append(
+                    {
+                        "rapper_name": battle.rapper2_name,
+                        "content": r.rapper2_verse.content,
+                    }
+                )
     return previous_verses
+
 
 async def judge_round_ai(battle, current_round) -> JudgmentCreate:
     """
@@ -65,13 +71,11 @@ async def judge_round_ai(battle, current_round) -> JudgmentCreate:
             rapper1_style=battle.style1,
             rapper2_name=battle.rapper2_name,
             rapper2_verse=current_round.rapper2_verse.content,
-            rapper2_style=battle.style2
+            rapper2_style=battle.style2,
         )
 
         return JudgmentCreate(
-            round_id=current_round.id,
-            winner=winner,
-            feedback=feedback
+            round_id=current_round.id, winner=winner, feedback=feedback
         )
     except Exception as e:
         logger.error(f"Error judging round {current_round.round_number}: {e}")
@@ -81,17 +85,17 @@ async def judge_round_ai(battle, current_round) -> JudgmentCreate:
         feedback = prompt_service.get_default_judgment(
             rapper1_name=battle.rapper1_name,
             rapper2_name=battle.rapper2_name,
-            winner=winner
+            winner=winner,
         )
 
         return JudgmentCreate(
-            round_id=current_round.id,
-            winner=winner,
-            feedback=feedback
+            round_id=current_round.id, winner=winner, feedback=feedback
         )
 
 
-async def generate_verses_for_round(battle, round_obj, previous_verses=None, cached_data=None):
+async def generate_verses_for_round(
+    battle, round_obj, previous_verses=None, cached_data=None
+):
     """
     Generate verses for both rappers in a round.
 
@@ -114,7 +118,7 @@ async def generate_verses_for_round(battle, round_obj, previous_verses=None, cac
             style2=battle.style2,
             round_number=round_obj.round_number,
             previous_verses=previous_verses if previous_verses else None,
-            cached_data=cached_data
+            cached_data=cached_data,
         )
 
         # Extract verses from the result
@@ -132,13 +136,13 @@ async def generate_verses_for_round(battle, round_obj, previous_verses=None, cac
         verse1 = Verse(
             round_id=round_obj.id,
             rapper_name=battle.rapper1_name,
-            content=verse1_content
+            content=verse1_content,
         )
 
         verse2 = Verse(
             round_id=round_obj.id,
             rapper_name=battle.rapper2_name,
-            content=verse2_content
+            content=verse2_content,
         )
 
         # Return extracted data including cached data for future rounds
@@ -154,7 +158,7 @@ async def generate_verses_for_round(battle, round_obj, previous_verses=None, cac
             rapper_name=battle.rapper1_name,
             opponent_name=battle.rapper2_name,
             round_number=round_obj.round_number,
-            style=battle.style1
+            style=battle.style1,
         )
 
         verse2_content = prompt_service.get_fallback_verse(
@@ -162,19 +166,19 @@ async def generate_verses_for_round(battle, round_obj, previous_verses=None, cac
             rapper_name=battle.rapper2_name,
             opponent_name=battle.rapper1_name,
             round_number=battle.round_number,
-            style=battle.style2
+            style=battle.style2,
         )
 
         verse1 = Verse(
             round_id=round_obj.id,
             rapper_name=battle.rapper1_name,
-            content=verse1_content
+            content=verse1_content,
         )
 
         verse2 = Verse(
             round_id=round_obj.id,
             rapper_name=battle.rapper2_name,
-            content=verse2_content
+            content=verse2_content,
         )
 
         return verse1, verse2, None
@@ -201,7 +205,9 @@ class BattleService:
 
         return BattleResponse.model_validate(battle)
 
-    async def generate_complete_battle(self, battle_data: BattleCreate) -> BattleResponse:
+    async def generate_complete_battle(
+        self, battle_data: BattleCreate
+    ) -> BattleResponse:
         """
         Generate a complete battle with all rounds and verses in one go.
 
@@ -255,7 +261,7 @@ class BattleService:
                         battle=battle,
                         round_obj=current_round,
                         previous_verses=previous_verses if previous_verses else None,
-                        cached_data=cached_data
+                        cached_data=cached_data,
                     )
 
                     # Update cached data if available
@@ -267,18 +273,18 @@ class BattleService:
                     await battle_repository.add_verse(current_round.id, verse2)
 
                     # Add verses to previous verses for context in next round
-                    previous_verses.append({
-                        "rapper_name": battle.rapper1_name,
-                        "content": verse1.content
-                    })
-                    previous_verses.append({
-                        "rapper_name": battle.rapper2_name,
-                        "content": verse2.content
-                    })
+                    previous_verses.append(
+                        {"rapper_name": battle.rapper1_name, "content": verse1.content}
+                    )
+                    previous_verses.append(
+                        {"rapper_name": battle.rapper2_name, "content": verse2.content}
+                    )
 
                     # Note: Automatic judging has been removed. Users can manually judge rounds using the API endpoints.
                 except Exception as e:
-                    logger.error(f"Error generating verses for round {round_number}: {e}")
+                    logger.error(
+                        f"Error generating verses for round {round_number}: {e}"
+                    )
 
                     # If there's an error, use default verses and judgment
                     # First rapper with style1
@@ -287,13 +293,13 @@ class BattleService:
                         rapper_name=battle.rapper1_name,
                         opponent_name=battle.rapper2_name,
                         round_number=battle.current_round,
-                        style=battle.style1
+                        style=battle.style1,
                     )
 
                     verse1 = Verse(
                         round_id=current_round.id,
                         rapper_name=battle.rapper1_name,
-                        content=verse1_content
+                        content=verse1_content,
                     )
 
                     await battle_repository.add_verse(current_round.id, verse1)
@@ -304,26 +310,24 @@ class BattleService:
                         rapper_name=battle.rapper2_name,
                         opponent_name=battle.rapper1_name,
                         round_number=battle.current_round,
-                        style=battle.style2
+                        style=battle.style2,
                     )
 
                     verse2 = Verse(
                         round_id=current_round.id,
                         rapper_name=battle.rapper2_name,
-                        content=verse2_content
+                        content=verse2_content,
                     )
 
                     await battle_repository.add_verse(current_round.id, verse2)
 
                     # Add verses to previous verses for context in next round
-                    previous_verses.append({
-                        "rapper_name": battle.rapper1_name,
-                        "content": verse1_content
-                    })
-                    previous_verses.append({
-                        "rapper_name": battle.rapper2_name,
-                        "content": verse2_content
-                    })
+                    previous_verses.append(
+                        {"rapper_name": battle.rapper1_name, "content": verse1_content}
+                    )
+                    previous_verses.append(
+                        {"rapper_name": battle.rapper2_name, "content": verse2_content}
+                    )
         except Exception as e:
             logger.error(f"Error generating complete battle: {e}")
 
@@ -362,7 +366,9 @@ class BattleService:
         battles = await battle_repository.list_battles()
         return [BattleResponse.model_validate(battle) for battle in battles]
 
-    async def generate_battle_with_verses(self, battle_data: BattleCreate) -> BattleResponse:
+    async def generate_battle_with_verses(
+        self, battle_data: BattleCreate
+    ) -> BattleResponse:
         """
         Generate a battle with verses for both rappers but without automatic judgment.
 
@@ -396,7 +402,7 @@ class BattleService:
                 battle=battle,
                 round_obj=current_round,
                 previous_verses=None,
-                cached_data=None
+                cached_data=None,
             )
 
             # Save verses to database
@@ -419,7 +425,12 @@ class BattleService:
 
         return battle
 
-    async def judge_round(self, battle_id: UUID, round_id: UUID, user_judgment: Optional[JudgmentCreate] = None) -> Tuple[bool, BattleResponse]:
+    async def judge_round(
+        self,
+        battle_id: UUID,
+        round_id: UUID,
+        user_judgment: Optional[JudgmentCreate] = None,
+    ) -> Tuple[bool, BattleResponse]:
         """
         Judge a round of the battle.
 
@@ -464,7 +475,9 @@ class BattleService:
             user_submitted = False
 
         # Add the judgment to the database
-        success = await battle_repository.add_judgment(judgment, user_submitted=user_submitted)
+        success = await battle_repository.add_judgment(
+            judgment, user_submitted=user_submitted
+        )
         if not success:
             return False, BattleResponse.model_validate(battle)
 
@@ -509,11 +522,12 @@ class BattleService:
                 battle=battle,
                 round_obj=new_round,
                 previous_verses=previous_verses,
-                cached_data=None
+                cached_data=None,
             )
 
             # Save verses to database
             await battle_repository.add_verse(new_round.id, verse1)
             await battle_repository.add_verse(new_round.id, verse2)
+
 
 battle_service = BattleService()

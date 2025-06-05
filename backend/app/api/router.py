@@ -1,6 +1,7 @@
 """
 API router configuration.
 """
+
 from fastapi import APIRouter
 
 from app.api.routes import health, battles, artists

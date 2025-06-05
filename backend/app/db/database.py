@@ -1,6 +1,7 @@
 """
 Database connection and initialization module.
 """
+
 from typing import Optional
 
 from qdrant_client import QdrantClient
@@ -25,7 +26,9 @@ class Database:
         if cls._client is None:
             # Configure Qdrant client with API key if available (for cloud)
             if settings.qdrant_api_key:
-                cls._client = QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
+                cls._client = QdrantClient(
+                    url=settings.qdrant_url, api_key=settings.qdrant_api_key
+                )
             else:
                 cls._client = QdrantClient(url=settings.qdrant_url)
         return cls._client
