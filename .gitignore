@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 .github/copilot-instructions.md
 backend/merged_output.csv
+CLAUDE.md

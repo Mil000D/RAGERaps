@@ -2,8 +2,7 @@
 RAGERaps - AI Rap Battle Web Application
 Main application entry point
 """
-import asyncio
-import os
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,10 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from app.api.router import api_router
-from app.db.database import db
-from app.agents.rapper_agent import rapper_agent, initialize_rapper_agent
+from app.agents.rapper_agent import initialize_rapper_agent
 
-# Load environment variables
 load_dotenv()
 
 
@@ -26,10 +23,7 @@ async def lifespan(app: FastAPI):
     Args:
         app: FastAPI application
     """
-    # Initialize the database
-    await db.initialize()
 
-    # Initialize the rapper agent with MCP tools
     try:
         print("Initializing rapper agent with MCP tools...")
         await initialize_rapper_agent()
@@ -40,10 +34,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Cleanup resources if needed
 
-
-# Create FastAPI app
 app = FastAPI(
     title="RAGERaps API",
     description="""
@@ -71,27 +62,27 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    swagger_ui_parameters={"defaultModelsExpandDepth": 1, "persistAuthorization": True}
+    swagger_ui_parameters={"defaultModelsExpandDepth": 1, "persistAuthorization": True},
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Root endpoint
+
 @app.get("/")
 async def root():
     """Root endpoint to check if the API is running."""
     return {"message": "Welcome to RAGERaps API", "status": "online"}
 
-# Include API router
+
 app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -63,14 +63,14 @@
           </div>
         </div>
 
-        <div class="judgment" *ngIf="round.judge_feedback && !round.user_judgment">
+        <div class="judgment" *ngIf="round.feedback && !round.user_judgment">
           <h3>AI Judgment</h3>
           <div class="judgment-content">
             <div class="judgment-winner" *ngIf="round.winner">
               Winner: <strong>{{ round.winner }}</strong>
             </div>
             <div class="judgment-feedback">
-              <ng-container *ngIf="parsedJudgeFeedback(round.judge_feedback) as feedback">
+              <ng-container *ngIf="parsedJudgeFeedback(round.feedback) as feedback">
                 <div class="judgment-section rapper1-analysis">
                   <div class="section-header" (click)="toggleAnalysisSection(round.id!, 'rapper1')">
                     <h4>Analysis of {{battle.rapper1_name}}'s verse:</h4>

@@ -32,7 +32,7 @@ export interface Round {
   rapper1_verse?: Verse;
   rapper2_verse?: Verse;
   user_judgment?: Judgment | null;
-  judge_feedback?: string | null;
+  feedback?: string | null;
   winner?: string | null;
   round_number: number;
   status: 'completed' | 'in_progress';

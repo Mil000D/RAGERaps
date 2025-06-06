@@ -59,6 +59,4 @@ agent = create_react_agent("openai:gpt-4o", tools)
 ## Available Tools
 
 1. `search_wikipedia`: Search Wikipedia for information about a topic
-2. `search_rapper_wikipedia`: Search Wikipedia specifically for information about a rapper
 3. `search_internet`: Search the internet for information using Tavily
-4. `search_rapper_info`: Search the internet for information about a specific rapper using Tavily

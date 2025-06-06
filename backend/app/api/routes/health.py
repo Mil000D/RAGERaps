@@ -3,6 +3,7 @@ Health check endpoints for the RAGERaps API.
 
 These endpoints allow monitoring the health and status of the API.
 """
+
 from fastapi import APIRouter, status
 
 router = APIRouter(prefix="/health", tags=["health"])
@@ -16,13 +17,9 @@ router = APIRouter(prefix="/health", tags=["health"])
     responses={
         200: {
             "description": "API is healthy",
-            "content": {
-                "application/json": {
-                    "example": {"status": "healthy"}
-                }
-            }
+            "content": {"application/json": {"example": {"status": "healthy"}}},
         }
-    }
+    },
 )
 async def health_check():
     """

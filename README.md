@@ -1,55 +1,99 @@
-# RAGERaps
+# 🎤 RAGERaps
 
-RAGERaps is an AI rap battle application using Python with uv for backend and Angular for frontend, featuring RAG-based style interpretation and web search for biographical information.
+> 🔥 **AI Rap Battle Arena** - Where artificial minds drop bars and spit fire! 🔥
 
-## Setup
+RAGERaps is an AI-powered rap battle application that combines cutting-edge RAG technology with parallel agent execution to create epic lyrical showdowns. Built with FastAPI backend and Angular frontend.
 
-### Backend
+## 🚀 Quick Start
 
-1. Navigate to the backend directory:
+### 📋 Prerequisites
+- 🐍 Python 3.13+ with [uv](https://docs.astral.sh/uv/) package manager
+- 📦 Node.js 18+ and npm
+- 🗄️ Qdrant vector database (local or cloud)
+
+### ⚙️ Backend Setup
+
+1. 📁 Navigate to the backend directory:
 ```bash
 cd backend
 ```
 
-2. Create a `.env` file based on the example:
+2. 📥 Install dependencies:
+```bash
+uv sync
+```
+
+3. 🔑 Create a `.env` file with required API keys:
 ```bash
 cp .env.example .env
 ```
 
-3. Update the `.env` file with your API keys and configuration.
-
-### Qdrant Configuration
-
-RAGERaps uses Qdrant as a vector database for storing and retrieving rap styles. You can use either a local Qdrant instance or a cloud-hosted Qdrant cluster.
-
-#### Local Qdrant
-
-To use a local Qdrant instance, set the following in your `.env` file:
+4. ✏️ Update the `.env` file with your configuration:
+```env
+OPENAI_API_KEY=your-openai-api-key
+TAVILY_API_KEY=your-tavily-api-key
+QDRANT_URL=http://localhost:6333  # or your cloud URL
+QDRANT_API_KEY=your-qdrant-api-key  # only for cloud
+LANGSMITH_API_KEY=your-langsmith-key  # optional
 ```
+
+### 🎨 Frontend Setup
+
+1. 📁 Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. 📥 Install dependencies:
+```bash
+npm install
+```
+
+### 🗄️ Qdrant Configuration
+
+RAGERaps uses Qdrant as a vector database for storing and retrieving rap styles. Choose your setup:
+
+#### 🏠 Local Qdrant
+```env
 QDRANT_URL=http://localhost:6333
 # No API key needed for local instance
 ```
 
-#### Cloud Qdrant
-
-To use a cloud-hosted Qdrant cluster, set the following in your `.env` file:
-```
+#### ☁️ Cloud Qdrant
+```env
 QDRANT_URL=https://your-qdrant-cluster-url.cloud.qdrant.io
 QDRANT_API_KEY=your-qdrant-api-key
 ```
 
-### Running the Application
+## 🎵 Running the Application
 
-1. Start the backend server:
+### 🚀 Start Backend
 ```bash
 cd backend
 uvicorn main:app --reload
 ```
+> ⚠️ **Note**: You may see SyntaxWarnings from the Qdrant library - these are harmless and can be ignored.
 
-2. Start the frontend development server:
+### 🎨 Start Frontend
 ```bash
 cd frontend
 ng serve
 ```
 
-3. Open your browser and navigate to `http://localhost:4200`
+### 🌐 Access the Battle Arena
+- 🎤 **Frontend**: `http://localhost:4200`
+- 🔧 **Backend API**: `http://localhost:8000`
+
+---
+
+## 🎯 Features
+
+- 🤖 **AI Rappers**: Multiple AI agents with distinct styles
+- ⚡ **Parallel Battles**: Simultaneous verse generation
+- 🔍 **RAG-Powered**: Vector search for authentic style matching
+- 🏆 **AI Judging**: Automated battle scoring
+- 🌐 **Web Integration**: Real-time artist data retrieval
+
+---
+
+*Ready to witness the future of rap battles? Let the AI cypher begin! 🎤🔥*
