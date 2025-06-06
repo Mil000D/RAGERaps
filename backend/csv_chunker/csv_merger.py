@@ -11,6 +11,9 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+sys.path.append(str(Path(__file__).parent.parent))
+from app.utils.common import clean_lyrics_text
+
 
 class CSVMerger:
     """Handles merging of artist and song CSV files."""
@@ -91,9 +94,7 @@ class CSVMerger:
 
             if "Lyric" in self.songs_df.columns:
                 print("Cleaning lyrics text...")
-                self.songs_df["Lyric"] = self.songs_df["Lyric"].apply(
-                    self.clean_lyrics_text
-                )
+                self.songs_df["Lyric"] = self.songs_df["Lyric"].apply(clean_lyrics_text)
                 print("✓ Lyrics text cleaned")
 
         except Exception as e:
@@ -147,7 +148,7 @@ class CSVMerger:
             if "Lyric" in self.merged_df.columns:
                 print("Final cleaning of lyrics text before saving...")
                 self.merged_df["Lyric"] = self.merged_df["Lyric"].apply(
-                    self.clean_lyrics_text
+                    clean_lyrics_text
                 )
 
             self.merged_df.to_csv(

@@ -175,3 +175,7 @@ cython_debug/
 .github/copilot-instructions.md
 backend/merged_output.csv
 CLAUDE.md
+artists-data.csv
+lyrics-data.csv
+BACKEND_ARCHITECTURE.md
+merged-artist-lyrics.csv

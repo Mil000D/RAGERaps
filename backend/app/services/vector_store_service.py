@@ -123,5 +123,34 @@ class VectorStoreService:
 
         return results
 
+    async def add_artist_data_batch(self, artist_data_list) -> List[str]:
+        """
+        Add multiple artist data records to the vector store.
+
+        Args:
+            artist_data_list: List of ArtistData objects
+
+        Returns:
+            List[str]: List of document IDs of stored data
+        """
+        vector_store = await self.get_vector_store()
+
+        documents = []
+        for artist_data in artist_data_list:
+            content = f"Artist: {artist_data.artist}\nGenres: {artist_data.genres}\nLyrics: {artist_data.lyric}"
+
+            metadata = {
+                "artist": artist_data.artist,
+                "genres": artist_data.genres,
+                "songs": artist_data.songs,
+                "lyric": artist_data.lyric,
+            }
+
+            document = Document(page_content=content, metadata=metadata)
+            documents.append(document)
+
+        doc_ids = await vector_store.aadd_documents(documents)
+        return doc_ids
+
 
 vector_store_service = VectorStoreService()
