@@ -56,5 +56,8 @@ class Round(BaseModel):
     feedback: Optional[str] = Field(
         default=None,
         description="Judgment feedback explaining the decision - provided by AI or user",
-        examples=["Great flow and wordplay from rapper 1", "Rapper 2 had better delivery"],
+        examples=[
+            "Great flow and wordplay from rapper 1",
+            "Rapper 2 had better delivery",
+        ],
     )

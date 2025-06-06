@@ -32,30 +32,24 @@ class RapperAgent:
 
     def __init__(self):
         """Initialize the rapper agent."""
-        # Initialize the LLM
+
         self.llm = ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0.9,
             api_key=settings.openai_api_key,
             streaming=False,
         )
-        
-        # Initialize LangGraph memory
+
         self.memory = MemorySaver()
 
-        # Initialize tools with artist retrieval tool
         self.tools = [artist_retrieval_tool]
 
-        # Initialize MCP tools (will be loaded asynchronously)
         self.mcp_tools = []
 
-        # Bind tools to the LLM (will be updated with MCP tools)
         self.llm_with_tools = self.llm.bind_tools(self.tools)
 
-        # Initialize graph as None - will be created after MCP tools are loaded
         self.graph = None
-        
-        # Create initial graph with available tools for fallback
+
         self._create_initial_graph()
 
     async def _init_mcp_tools(self, server_url="http://localhost:8888/mcp"):
@@ -71,7 +65,6 @@ class RapperAgent:
         try:
             print(f"Connecting to MCP server at {server_url}...")
 
-            # Connect to the MCP server
             client = MultiServerMCPClient(
                 {
                     "search": {
@@ -81,7 +74,6 @@ class RapperAgent:
                 }
             )
 
-            # Get all tools from the server
             print("Fetching tools from MCP server...")
             self.mcp_tools = await client.get_tools()
             print(f"Retrieved {len(self.mcp_tools)} tools from MCP server")
@@ -90,15 +82,14 @@ class RapperAgent:
                 print("Warning: No tools were retrieved from the MCP server")
                 return False
 
-            # Add MCP tools to the tools list
             self.tools.extend(self.mcp_tools)
-            print(f"Added {len(self.mcp_tools)} MCP tools to rapper agent: {[getattr(tool, 'name', 'unknown') for tool in self.mcp_tools]}")
+            print(
+                f"Added {len(self.mcp_tools)} MCP tools to rapper agent: {[getattr(tool, 'name', 'unknown') for tool in self.mcp_tools]}"
+            )
 
-            # Update the LLM with tools
             self.llm_with_tools = self.llm.bind_tools(self.tools)
             print(f"LLM now bound with {len(self.tools)} total tools")
 
-            # Create the graph with updated tools
             self.graph = self._create_graph()
             print(f"Graph recreated with {len(self.tools)} tools available to ToolNode")
 
@@ -107,14 +98,14 @@ class RapperAgent:
         except Exception as e:
             print(f"Error initializing MCP tools: {str(e)}")
             print("The application will continue with style tools only")
-            # We already created the graph in __init__ with style tools only
+
             return False
 
     def _create_initial_graph(self):
         """Create initial graph with current tools for fallback."""
         if not self.graph:
             self.graph = self._create_graph()
-    
+
     def _create_graph(self) -> StateGraph:
         """
         Create the LangGraph for the rapper agent.
@@ -123,86 +114,75 @@ class RapperAgent:
             StateGraph: The created graph
         """
 
-        # Define the nodes
         def rapper_node(state: RapperState):
             """Process the state and generate a response."""
-            # For first round, allow LLM to directly use MCP tools if available
-            # The LangChain caching will automatically handle response caching
+
             response = self.llm_with_tools.invoke(state["messages"])
 
-            # Return the response - LangGraph will handle tool call routing
             return {"messages": [response]}
 
-        # Create the tool node with all available tools
         tool_node = ToolNode(tools=self.tools)
 
-        # Create the graph
         graph_builder = StateGraph(RapperState)
 
-        # Add nodes
         graph_builder.add_node("rapper", rapper_node)
         graph_builder.add_node("tools", tool_node)
 
-        # Add conditional edges - this is crucial for tool usage
         graph_builder.add_conditional_edges(
             "rapper",
             tools_condition,
             {"tools": "tools", END: END},
         )
 
-        # After tools are executed, go back to rapper for final response
         graph_builder.add_edge("tools", "rapper")
 
-        # Set the entry point
         graph_builder.set_entry_point("rapper")
 
-        # Compile the graph with memory checkpointer
         return graph_builder.compile(checkpointer=self.memory)
 
     def _get_thread_id(self, rapper_name: str, opponent_name: str, style: str) -> str:
         """
         Generate a consistent thread ID for conversation memory.
-        
+
         Args:
             rapper_name: Name of the rapper
             opponent_name: Name of the opponent
             style: Rap style
-            
+
         Returns:
             str: Thread ID for memory storage
         """
-        # Create a consistent thread ID based on battle participants and style
-        # This ensures the same battle context is maintained across rounds
-        battle_context = f"{rapper_name.lower()}_{opponent_name.lower()}_{style.lower()}"
+
+        battle_context = (
+            f"{rapper_name.lower()}_{opponent_name.lower()}_{style.lower()}"
+        )
         return f"battle_{hash(battle_context) % 1000000}"
 
     def _get_available_tools_info(self) -> str:
         """
         Get information about available tools for the LLM.
-        
+
         Returns:
             str: Formatted string describing available tools
         """
         tool_descriptions = []
-        
-        # Always include artist retrieval tool
+
         tool_descriptions.append(
             "- retrieve_artist_data: Get artist lyrics and style data from vector store. "
             "IMPORTANT: Always pass the 'style' parameter when you know the rap style."
         )
-        
-        # Add MCP tools if available
+
         for tool in self.mcp_tools:
             tool_name = getattr(tool, "name", "unknown")
             tool_desc = getattr(tool, "description", "No description available")
             tool_descriptions.append(f"- {tool_name}: {tool_desc}")
-        
+
         if tool_descriptions:
             tools_info = "\n".join(tool_descriptions)
             return f"You have access to the following tools:\n{tools_info}\n\nUse these tools to gather information about the rappers when needed. LangChain's caching will automatically handle repeated requests."
-        
+
         return ""
-    
+
     def get_current_tools_debug(self) -> str:
         """Debug method to show current tools available."""
         tool_list = []
@@ -233,20 +213,16 @@ class RapperAgent:
             str: Generated verse
         """
         try:
-            # Initialize MCP tools if not already initialized
             if self.graph is None:
                 print("Graph not initialized. Creating graph with available tools...")
-                # Create the graph with whatever tools we have available
+
                 self.graph = self._create_graph()
 
-            # Determine if this is the first round
             is_first_round = round_number == 1
 
-            # Get thread ID for memory persistence
             thread_id = self._get_thread_id(rapper_name, opponent_name, style)
             config = {"configurable": {"thread_id": thread_id}}
 
-            # Create the system message with available tools info
             system_message = self._create_system_message(
                 rapper_name,
                 opponent_name,
@@ -256,8 +232,6 @@ class RapperAgent:
                 available_tools=self._get_available_tools_info(),
             )
 
-            # Create the human message using prompt service
-            # Ensure style parameter is properly passed for artist_retrieval_tool caching
             human_template = prompt_service.get_prompt(
                 "rapper", "human_message", "template"
             )
@@ -267,7 +241,6 @@ class RapperAgent:
                 )
             )
 
-            # Initialize the state
             initial_state = {
                 "messages": [system_message, human_message],
                 "rapper_name": rapper_name,
@@ -277,10 +250,8 @@ class RapperAgent:
                 "is_first_round": is_first_round,
             }
 
-            # Run the graph with memory config
             result = await self.graph.ainvoke(initial_state, config)
 
-            # Extract the verse from the result
             verse_content = self._extract_verse(result["messages"])
 
             return verse_content
@@ -311,12 +282,11 @@ class RapperAgent:
         Returns:
             SystemMessage: The created system message
         """
-        # With LangGraph memory, biographical info will be retained in conversation history
+
         has_biographical_info = False
         biographical_info = None
         opponent_biographical_info = None
 
-        # Use prompt service to create the system message
         system_content = prompt_service.get_rapper_system_message(
             rapper_name=rapper_name,
             opponent_name=opponent_name,
@@ -328,8 +298,7 @@ class RapperAgent:
             is_first_round=(round_number == 1),
             previous_verses=previous_verses,
         )
-        
-        # Add available tools information to system content if tools are available
+
         if available_tools:
             system_content += f"\n\nAVAILABLE TOOLS:\n{available_tools}"
 
@@ -346,21 +315,15 @@ class RapperAgent:
             str: Extracted verse
         """
         try:
-            # Get the last message
             last_message = messages[-1]
 
-            # Extract the content
             content = last_message.content
 
-            # Clean up the content
-            # Remove any explanations or notes before or after the verse
             if "```" in content:
-                # Extract content between code blocks
                 verse_parts = content.split("```")
                 if len(verse_parts) >= 3:
                     return verse_parts[1].strip()
 
-            # If no code blocks, try to extract the verse directly
             lines = content.split("\n")
             verse_lines = []
             in_verse = False
@@ -379,7 +342,6 @@ class RapperAgent:
 
             extracted_verse = "\n".join(verse_lines).strip()
 
-            # If we couldn't extract anything meaningful, return the raw content
             if not extracted_verse:
                 return content
 
@@ -388,15 +350,9 @@ class RapperAgent:
             return "Error extracting verse."
 
 
-# Create a rapper agent instance
 rapper_agent = RapperAgent()
 
 
-# Define an initialization function that will be called from the application startup
 async def initialize_rapper_agent():
     """Initialize the rapper agent with MCP tools."""
     await rapper_agent._init_mcp_tools()
-
-
-# Note: This function will be called during application startup
-# We don't call it here to avoid the "no running event loop" error

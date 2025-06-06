@@ -16,11 +16,9 @@ from app.services.battle_orchestration_service import battle_orchestration_servi
 from app.services.judgment_service import judgment_service
 from app.services.round_management_service import round_management_service
 
-# Configure logger
 logger = logging.getLogger(__name__)
 
 
-# Backward compatibility functions
 def get_previous_verses(battle, round_number):
     """
     Get verses from previous rounds.
@@ -134,5 +132,4 @@ class BattleService:
         )
 
 
-# Create singleton instance
 battle_service = BattleService()

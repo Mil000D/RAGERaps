@@ -65,7 +65,6 @@ class PromptService:
         try:
             config_data = {}
 
-            # Load each TOML file
             toml_files = {
                 "battle_prompts": "battle_prompts.toml",
                 "rapper_prompts": "rapper_prompts.toml",
@@ -87,7 +86,7 @@ class PromptService:
 
         except Exception as e:
             print(f"Error loading prompt configurations: {e}")
-            # Initialize with empty config as fallback
+
             self._config = PromptConfig()
 
     @lru_cache(maxsize=128)
@@ -111,7 +110,6 @@ class PromptService:
         if not self._config:
             raise ValueError("Prompt configuration not loaded")
 
-        # Map category names to config attributes
         category_map = {
             "battle": self._config.battle_prompts,
             "rapper": self._config.rapper_prompts,
@@ -130,7 +128,6 @@ class PromptService:
             else:
                 template_data = category_data[key]
 
-            # Handle both string templates and dict with template key
             if isinstance(template_data, str):
                 return PromptTemplate(template=template_data)
             elif isinstance(template_data, dict) and "template" in template_data:
@@ -172,7 +169,7 @@ class PromptService:
         Returns:
             str: Complete formatted system message
         """
-        # Get base template
+
         base_template = self.get_prompt("rapper", "system_message", "base_template")
         system_content = base_template.format(
             rapper_name=rapper_name,
@@ -181,7 +178,6 @@ class PromptService:
             round_number=round_number,
         )
 
-        # Add biographical information if available
         if has_biographical_info and biographical_info and opponent_biographical_info:
             bio_template = self.get_prompt(
                 "rapper", "system_message", "biographical_section"
@@ -193,7 +189,6 @@ class PromptService:
                 opponent_biographical_info=opponent_biographical_info,
             )
         elif is_first_round:
-            # Add first round research instructions
             research_template = self.get_prompt(
                 "rapper", "system_message", "first_round_research"
             )
@@ -201,17 +196,14 @@ class PromptService:
                 rapper_name=rapper_name, opponent_name=opponent_name
             )
 
-        # Add common ending
         ending_template = self.get_prompt("rapper", "system_message", "common_ending")
         system_content += ending_template.template
 
-        # Add previous verses context if available
         if previous_verses:
             context_template = self.get_prompt(
                 "rapper", "system_message", "previous_verses_context"
             )
 
-            # Format previous verses
             formatted_verses = []
             for verse in previous_verses:
                 verse_format = self.get_prompt(
@@ -256,5 +248,4 @@ class PromptService:
         return template.format(**kwargs)
 
 
-# Create a global prompt service instance
 prompt_service = PromptService()

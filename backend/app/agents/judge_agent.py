@@ -23,14 +23,12 @@ class JudgeAgent:
             streaming=False,
         )
 
-        # Create the prompt template using prompt service
         system_prompt = prompt_service.get_judge_system_prompt()
 
         self.prompt = ChatPromptTemplate.from_messages(
             [("system", system_prompt), ("human", "{input}")]
         )
 
-        # Create the chain by piping the prompt to the LLM
         self.chain = self.prompt | self.llm
 
     async def judge_round(
@@ -57,7 +55,6 @@ class JudgeAgent:
             Tuple[str, str]: Winner name and feedback
         """
         try:
-            # Create the input using prompt service
             input_text = prompt_service.get_judge_input_template(
                 rapper1_name=rapper1_name,
                 rapper1_style=rapper1_style,
@@ -124,5 +121,4 @@ class JudgeAgent:
             )
 
 
-# Create a judge agent instance
 judge_agent = JudgeAgent()

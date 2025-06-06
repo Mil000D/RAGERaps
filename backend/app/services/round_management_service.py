@@ -137,17 +137,15 @@ class RoundManagementService:
         Returns:
             bool: True if battle is complete
         """
-        # Battle is complete if someone has won 2 rounds (best of 3)
+
         if battle.rapper1_wins >= 2 or battle.rapper2_wins >= 2:
             return True
 
-        # Battle is also complete if all 3 rounds are finished (final tiebreaker)
         completed_rounds = sum(1 for r in battle.rounds if r.status == "completed")
         if completed_rounds >= 3:
             return True
-            
+
         return False
 
 
-# Create singleton instance
 round_management_service = RoundManagementService()

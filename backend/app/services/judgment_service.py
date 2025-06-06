@@ -43,7 +43,6 @@ class JudgmentService:
             if not current_round.rapper1_verse or not current_round.rapper2_verse:
                 raise ValueError("Cannot judge round without both verses")
 
-            # Use the judge agent to evaluate the round
             winner, feedback = await judge_agent.judge_round(
                 rapper1_name=battle.rapper1_name,
                 rapper1_verse=current_round.rapper1_verse.content,
@@ -53,7 +52,6 @@ class JudgmentService:
                 rapper2_style=battle.style2,
             )
 
-            # Validate winner
             if winner not in [battle.rapper1_name, battle.rapper2_name]:
                 logger.warning(f"Invalid winner from AI: {winner}, using fallback")
                 return self._fallback_judgment(battle)
@@ -114,7 +112,6 @@ class JudgmentService:
             if not battle:
                 raise ValueError(f"Battle not found: {battle_id}")
 
-            # Find the round
             target_round = None
             for round_obj in battle.rounds:
                 if round_obj.id == round_id:
@@ -125,38 +122,32 @@ class JudgmentService:
                 raise ValueError(f"Round not found: {round_id}")
 
             if use_ai:
-                # Use AI judgment
                 winner, feedback = await self.judge_round_ai(battle, target_round)
                 target_round.user_judgment = False
                 target_round.feedback = feedback
             else:
-                # Use user judgment
                 if not user_judgment:
                     raise ValueError("User judgment required when use_ai=False")
 
                 winner = user_judgment.winner
                 target_round.user_judgment = True
-                # Store user feedback if provided
-                if hasattr(user_judgment, 'feedback') and user_judgment.feedback:
+
+                if hasattr(user_judgment, "feedback") and user_judgment.feedback:
                     target_round.feedback = user_judgment.feedback
 
-            # Update round
             target_round.winner = winner
             target_round.status = "completed"
 
-            # Update battle win counts
             if winner == battle.rapper1_name:
                 battle.rapper1_wins += 1
             else:
                 battle.rapper2_wins += 1
 
-            # Check for battle completion
             battle_winner = self.determine_battle_winner(battle)
             if battle_winner:
                 battle.winner = battle_winner
                 battle.status = "completed"
 
-            # Save changes
             updated_battle = self.repository.update_battle(battle)
             logger.info(f"Round {round_id} judged successfully, winner: {winner}")
 
@@ -176,13 +167,12 @@ class JudgmentService:
         Returns:
             Optional[str]: Winner name if there is one, None otherwise
         """
-        # Winner needs 2 out of 3 rounds
+
         if battle.rapper1_wins >= 2:
             return battle.rapper1_name
         elif battle.rapper2_wins >= 2:
             return battle.rapper2_name
 
-        # If all 3 rounds are complete but no clear winner, use round count
         completed_rounds = sum(1 for r in battle.rounds if r.status == "completed")
         if completed_rounds >= 3:
             if battle.rapper1_wins > battle.rapper2_wins:
@@ -190,11 +180,9 @@ class JudgmentService:
             elif battle.rapper2_wins > battle.rapper1_wins:
                 return battle.rapper2_name
             else:
-                # Tie - could implement tiebreaker logic here
                 return random.choice([battle.rapper1_name, battle.rapper2_name])
 
         return None
 
 
-# Create singleton instance
 judgment_service = JudgmentService()

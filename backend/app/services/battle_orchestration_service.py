@@ -3,7 +3,7 @@ Service for orchestrating complex battle workflows.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 from uuid import UUID
 
 from app.models.battle import BattleCreate, BattleResponse
@@ -45,18 +45,14 @@ class BattleOrchestrationService:
                 f"Starting complete battle generation: {battle_data.rapper1_name} vs {battle_data.rapper2_name}"
             )
 
-            # Create the battle
             battle = self.crud_service.create_battle(battle_data)
 
-            # Generate all 3 rounds
             for round_number in range(1, 4):
                 await self._generate_battle_round(battle, round_number)
 
-                # Check if battle is complete (someone won 2 rounds)
                 if self.round_service.is_battle_complete(battle):
                     break
 
-            # Finalize battle
             battle_winner = self.judgment_service.determine_battle_winner(battle)
             if battle_winner:
                 battle = self.crud_service.update_battle_winner(
@@ -90,10 +86,8 @@ class BattleOrchestrationService:
                 f"Generating battle with first round verses: {battle_data.rapper1_name} vs {battle_data.rapper2_name}"
             )
 
-            # Create the battle
             battle = self.crud_service.create_battle(battle_data)
 
-            # Generate first round
             await self._generate_battle_round(battle, 1)
 
             logger.info(f"Battle with first round generated successfully: {battle.id}")
@@ -127,16 +121,13 @@ class BattleOrchestrationService:
                 logger.info(f"Battle {battle_id} is already complete")
                 return battle
 
-            # Advance to next round
             next_round = battle.current_round + 1
             if next_round > 3:
                 logger.info(f"Battle {battle_id} has reached maximum rounds")
                 return battle
 
-            # Generate next round
             await self._generate_battle_round(battle, next_round)
 
-            # Check for completion
             if self.round_service.is_battle_complete(battle):
                 battle_winner = self.judgment_service.determine_battle_winner(battle)
                 if battle_winner:
@@ -174,7 +165,6 @@ class BattleOrchestrationService:
         try:
             logger.info(f"Judging round {round_id} in battle {battle_id}")
 
-            # Judge the round
             use_ai = user_judgment is None
             battle = await self.judgment_service.judge_round_and_update_battle(
                 battle_id, round_id, use_ai, user_judgment
@@ -183,13 +173,12 @@ class BattleOrchestrationService:
             if not battle:
                 return None
 
-            # If battle is not complete and we haven't reached the max rounds, generate next round
             if (
                 not self.round_service.is_battle_complete(battle)
                 and len(battle.rounds) < 3
             ):
                 await self.continue_battle_to_next_round(battle_id)
-                # Refresh battle data
+
                 battle = self.crud_service.get_battle(battle_id)
 
             logger.info(f"Round {round_id} judged successfully")
@@ -217,15 +206,12 @@ class BattleOrchestrationService:
         try:
             logger.info(f"Generating round {round_number} for battle {battle.id}")
 
-            # Create the round
             round_obj = self.round_service.create_round(battle.id, round_number)
 
-            # Get previous verses for context
             previous_verses = self.round_service.get_previous_verses(
                 battle, round_number
             )
 
-            # Generate verses
             (
                 rapper1_verse,
                 rapper2_verse,
@@ -236,12 +222,10 @@ class BattleOrchestrationService:
             if not rapper1_verse or not rapper2_verse:
                 raise Exception(f"Failed to generate verses for round {round_number}")
 
-            # Add verses to round
             self.round_service.add_verses_to_round(
                 battle.id, round_obj.id, rapper1_verse, rapper2_verse
             )
 
-            # Update battle current round
             battle.current_round = round_number
 
             logger.info(f"Successfully generated round {round_number}")
@@ -251,6 +235,4 @@ class BattleOrchestrationService:
             raise
 
 
-
-# Create singleton instance
 battle_orchestration_service = BattleOrchestrationService()

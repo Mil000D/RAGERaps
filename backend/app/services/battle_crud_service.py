@@ -108,5 +108,4 @@ class BattleCrudService:
             raise
 
 
-# Create singleton instance
 battle_crud_service = BattleCrudService()

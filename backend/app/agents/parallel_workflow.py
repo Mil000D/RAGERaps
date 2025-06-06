@@ -20,7 +20,7 @@ class BattleRoundState(TypedDict):
     style2: str
     round_number: int
     previous_verses: Optional[List[Dict]]
-    # Use operator.add to combine results from parallel execution
+
     verses: Annotated[List[Dict], operator.add]
 
 
@@ -35,10 +35,8 @@ async def rapper1_verse_node(state: BattleRoundState) -> BattleRoundState:
             previous_verses=state["previous_verses"],
         )
     except Exception:
-        # If there's an error, use a default verse
         verse_content = "Error generating verse."
 
-    # Return the verse in the format expected by the verses list
     return {
         "verses": [{"rapper_name": state["rapper1_name"], "content": verse_content}]
     }
@@ -55,17 +53,11 @@ async def rapper2_verse_node(state: BattleRoundState) -> BattleRoundState:
             previous_verses=state["previous_verses"],
         )
     except Exception:
-        # If there's an error, use a default verse
         verse_content = "Error generating verse."
 
-    # Return the verse in the format expected by the verses list
     return {
         "verses": [{"rapper_name": state["rapper2_name"], "content": verse_content}]
     }
-
-
-# Removed judge_round_node - battles now end after verse generation
-# Users can manually judge rounds using the API endpoints
 
 
 def create_battle_round_graph() -> StateGraph:
@@ -78,27 +70,21 @@ def create_battle_round_graph() -> StateGraph:
     Returns:
         StateGraph: The compiled graph for battle round execution
     """
-    # Create the graph
+
     graph = StateGraph(BattleRoundState)
 
-    # Add nodes for verse generation only
     graph.add_node("rapper1_verse", rapper1_verse_node)
     graph.add_node("rapper2_verse", rapper2_verse_node)
 
-    # Set up parallel execution of rapper verse generation
-    # Both rapper1_verse and rapper2_verse run in parallel from the START node
     graph.set_entry_point("rapper1_verse")
     graph.set_entry_point("rapper2_verse")
 
-    # Both rapper nodes end directly (no automatic judging)
     graph.add_edge("rapper1_verse", END)
     graph.add_edge("rapper2_verse", END)
 
-    # Compile the graph
     return graph.compile()
 
 
-# Create a singleton instance of the battle round graph
 battle_round_graph = create_battle_round_graph()
 
 
@@ -129,7 +115,7 @@ async def execute_battle_round_parallel(
     Returns:
         Dict: The final state with verses (no automatic judgment)
     """
-    # Initialize the state
+
     initial_state = {
         "round_id": round_id,
         "rapper1_name": rapper1_name,
@@ -141,8 +127,6 @@ async def execute_battle_round_parallel(
         "verses": [],
     }
 
-    # Execute the graph
-    # Use the ainvoke method for asynchronous execution
     final_state = await battle_round_graph.ainvoke(initial_state)
 
     return final_state

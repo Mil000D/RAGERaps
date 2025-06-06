@@ -30,7 +30,6 @@ class CSVMerger:
             file_path: Path to the artists CSV file
         """
         try:
-            # Try UTF-8 first, then fallback to other encodings
             encodings_to_try = ["utf-8", "utf-8-sig", "latin1", "cp1252", "iso-8859-1"]
 
             for encoding in encodings_to_try:
@@ -39,7 +38,7 @@ class CSVMerger:
                     print(f"✓ Successfully loaded artists CSV with {encoding} encoding")
                     break
                 except UnicodeDecodeError:
-                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                    if encoding == encodings_to_try[-1]:
                         raise
                     continue
 
@@ -68,7 +67,6 @@ class CSVMerger:
             file_path: Path to the songs CSV file
         """
         try:
-            # Try UTF-8 first, then fallback to other encodings
             encodings_to_try = ["utf-8", "utf-8-sig", "latin1", "cp1252", "iso-8859-1"]
 
             for encoding in encodings_to_try:
@@ -77,7 +75,7 @@ class CSVMerger:
                     print(f"✓ Successfully loaded songs CSV with {encoding} encoding")
                     break
                 except UnicodeDecodeError:
-                    if encoding == encodings_to_try[-1]:  # Last encoding failed
+                    if encoding == encodings_to_try[-1]:
                         raise
                     continue
 
@@ -91,7 +89,6 @@ class CSVMerger:
 
             print(f"✓ Loaded songs CSV: {len(self.songs_df)} records")
 
-            # Clean lyrics text to remove newlines and handle special characters
             if "Lyric" in self.songs_df.columns:
                 print("Cleaning lyrics text...")
                 self.songs_df["Lyric"] = self.songs_df["Lyric"].apply(
@@ -124,7 +121,6 @@ class CSVMerger:
         if self.artists_df is None or self.songs_df is None:
             raise ValueError("Both CSV files must be loaded before merging")
 
-        # Merge on Link (artists) = ALink (songs)
         self.merged_df = pd.merge(
             self.artists_df[["Artist", "Genres", "Songs", "Link"]],
             self.songs_df[["ALink", "SName", "Lyric"]],
@@ -133,7 +129,6 @@ class CSVMerger:
             how="inner",
         )
 
-        # Select and rename columns as required
         self.merged_df = self.merged_df[["Artist", "Genres", "Songs", "Lyric"]]
 
         print(f"✓ Merged data: {len(self.merged_df)} records")
@@ -149,22 +144,19 @@ class CSVMerger:
             raise ValueError("No merged data to save. Run merge_data() first.")
 
         try:
-            # Clean lyrics in the merged data before saving
             if "Lyric" in self.merged_df.columns:
                 print("Final cleaning of lyrics text before saving...")
                 self.merged_df["Lyric"] = self.merged_df["Lyric"].apply(
                     self.clean_lyrics_text
                 )
 
-            # Always save with UTF-8 encoding to ensure Unicode characters are preserved
-            # Use proper CSV quoting to handle special characters
             self.merged_df.to_csv(
                 output_path,
                 index=False,
                 encoding="utf-8",
-                quoting=1,  # QUOTE_ALL - ensures all fields are quoted
-                escapechar="\\",  # Escape character for special cases
-                lineterminator="\n",  # Ensure consistent line endings
+                quoting=1,
+                escapechar="\\",
+                lineterminator="\n",
             )
             print(f"✓ Saved merged CSV to: {output_path}")
 
@@ -181,7 +173,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Validate input files exist
     if not Path(args.artists_csv).exists():
         print(f"Error: Artists CSV file not found: {args.artists_csv}")
         sys.exit(1)
@@ -191,23 +182,18 @@ def main():
         sys.exit(1)
 
     try:
-        # Initialize merger
         merger = CSVMerger()
 
-        # Load data
         print("Loading CSV files...")
         merger.load_artists_csv(args.artists_csv)
         merger.load_songs_csv(args.songs_csv)
 
-        # Filter for English songs
         print("Filtering for English songs...")
         merger.filter_english_songs()
 
-        # Merge data
         print("Merging data...")
         merger.merge_data()
 
-        # Save result
         print("Saving merged data...")
         merger.save_merged_csv(args.output_csv)
 

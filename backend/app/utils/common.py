@@ -24,13 +24,10 @@ def clean_lyrics_text(text: str) -> str:
     if not isinstance(text, str):
         return str(text) if text is not None else ""
 
-    # Remove all types of newline characters
     cleaned = re.sub(r"[\r\n]+", " ", text)
 
-    # Replace multiple spaces with single space
     cleaned = re.sub(r"\s+", " ", cleaned)
 
-    # Strip leading and trailing whitespace
     cleaned = cleaned.strip()
 
     return cleaned

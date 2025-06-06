@@ -53,10 +53,8 @@ class VectorStoreService:
         if self._vector_store is None:
             client = self.get_client()
 
-            # Ensure collection exists
             await self._ensure_artists_collection_exists()
 
-            # Create vector store instance
             self._vector_store = QdrantVectorStore(
                 client=client,
                 collection_name=settings.qdrant_artists_collection_name,
@@ -71,15 +69,11 @@ class VectorStoreService:
         collection_name = settings.qdrant_artists_collection_name
 
         if not client.collection_exists(collection_name):
-            # Create collection with appropriate vector size for text-embedding-3-small
-            # text-embedding-3-small has 1536 dimensions
-
             client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
 
-            # Create indexes for metadata fields that will be used for filtering
             try:
                 client.create_payload_index(
                     collection_name=collection_name,
@@ -121,7 +115,6 @@ class VectorStoreService:
         """
         vector_store = await self.get_vector_store()
 
-        # Perform similarity search without filters to avoid index errors
         try:
             results = await vector_store.asimilarity_search(query=query, k=k)
         except Exception as e:
@@ -131,5 +124,4 @@ class VectorStoreService:
         return results
 
 
-# Create a singleton instance
 vector_store_service = VectorStoreService()

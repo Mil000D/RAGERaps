@@ -130,7 +130,7 @@ class InMemoryBattleRepository(IBattleRepository):
             if battle_round.id == round_id:
                 battle_round.rapper1_verse = rapper1_verse
                 battle_round.rapper2_verse = rapper2_verse
-                # Don't set status to completed here - only when judged
+
                 return battle_round
 
         raise ValueError(
@@ -138,5 +138,4 @@ class InMemoryBattleRepository(IBattleRepository):
         )
 
 
-# Create a repository instance
 battle_repository = InMemoryBattleRepository()

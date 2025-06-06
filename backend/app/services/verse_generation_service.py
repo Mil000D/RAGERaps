@@ -39,7 +39,6 @@ class VerseGenerationService:
                 f"Generating verses for round {round_obj.round_number} in battle {battle.id}"
             )
 
-            # Execute parallel verse generation
             result = await execute_battle_round_parallel(
                 round_id=round_obj.id,
                 rapper1_name=battle.rapper1_name,
@@ -50,12 +49,10 @@ class VerseGenerationService:
                 previous_verses=previous_verses,
             )
 
-            # Extract verses from the result
             verses = result.get("verses", [])
             rapper1_verse = None
             rapper2_verse = None
 
-            # Find verses for each rapper
             for verse in verses:
                 if verse["rapper_name"] == battle.rapper1_name:
                     rapper1_verse = Verse(
@@ -70,7 +67,6 @@ class VerseGenerationService:
                         content=verse["content"],
                     )
 
-            # Validate and handle results
             if not rapper1_verse or not rapper2_verse:
                 logger.warning(
                     f"Failed to generate verses for round {round_obj.round_number}, using fallback"
@@ -103,7 +99,6 @@ class VerseGenerationService:
         """
         logger.info(f"Generating fallback verses for round {round_obj.round_number}")
 
-        # Simple fallback verses
         fallback_lines = [
             "I'm the king of this game, no one can compete",
             "My rhymes are so fire, they can't be beat",
@@ -133,5 +128,4 @@ class VerseGenerationService:
         return rapper1_verse, rapper2_verse
 
 
-# Create singleton instance
 verse_generation_service = VerseGenerationService()

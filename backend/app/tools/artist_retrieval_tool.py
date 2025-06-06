@@ -40,14 +40,12 @@ class ArtistRetrievalTool(BaseTool):
         """
         import asyncio
 
-        # Run the async version
         try:
             loop = asyncio.get_event_loop()
             return loop.run_until_complete(
                 self._arun(artist_name, style, k, include_similar)
             )
         except RuntimeError:
-            # No event loop running, create one
             return asyncio.run(self._arun(artist_name, style, k, include_similar))
 
     async def _arun(
@@ -70,19 +68,15 @@ class ArtistRetrievalTool(BaseTool):
             Formatted string with artist data and lyrics
         """
         try:
-            # Validate and limit k
             k = min(k or 5, 10)
 
-            # Build search query
             if style:
                 search_query = f"{artist_name} {style} rap lyrics style flow"
             else:
                 search_query = f"{artist_name} rap lyrics style"
 
-            # Search for artist-specific content
             artist_docs = await self._safe_search(search_query, k)
 
-            # Search for similar artists if needed and requested
             similar_docs = []
             if include_similar and len(artist_docs) < k:
                 remaining_k = k - len(artist_docs)
@@ -92,14 +86,13 @@ class ArtistRetrievalTool(BaseTool):
                     style_query = "rap lyrics style flow technique"
 
                 all_docs = await self._safe_search(style_query, remaining_k * 2)
-                # Filter out the original artist
+
                 similar_docs = [
                     doc
                     for doc in all_docs
                     if doc.metadata.get("artist", "").lower() != artist_name.lower()
                 ][:remaining_k]
 
-            # Format the results
             return self._format_results(artist_name, artist_docs, similar_docs, style)
 
         except Exception as e:
@@ -145,23 +138,18 @@ class ArtistRetrievalTool(BaseTool):
         """
         result_parts = []
 
-        # Header
         style_text = f" ({style})" if style else ""
         result_parts.append(f"=== ARTIST DATA: {artist_name}{style_text} ===")
 
-        # Artist-specific content
         if artist_docs:
             result_parts.append(f"\n--- {artist_name} LYRICS & STYLE ---")
 
-            # Collect genres and characteristics
             all_genres = set()
             total_songs = 0
 
-            for i, doc in enumerate(artist_docs[:3], 1):  # Limit to 3 examples
-                # Extract full lyrics from metadata
+            for i, doc in enumerate(artist_docs[:3], 1):
                 full_lyrics = doc.metadata.get("lyric", "")
                 if full_lyrics:
-                    # Show first 1500 characters of lyrics
                     lyrics_preview = (
                         full_lyrics[:1500] + "..."
                         if len(full_lyrics) > 1500
@@ -170,7 +158,6 @@ class ArtistRetrievalTool(BaseTool):
                     result_parts.append(f"\nLyrics Sample {i}:")
                     result_parts.append(lyrics_preview)
 
-                # Collect metadata
                 genres = doc.metadata.get("genres", [])
                 if isinstance(genres, list):
                     all_genres.update(genres)
@@ -179,7 +166,6 @@ class ArtistRetrievalTool(BaseTool):
                 if isinstance(songs_count, (int, float)):
                     total_songs += int(songs_count)
 
-            # Add summary info
             if all_genres:
                 result_parts.append(f"\nGenres: {', '.join(sorted(all_genres))}")
             if total_songs > 0:
@@ -191,14 +177,13 @@ class ArtistRetrievalTool(BaseTool):
         else:
             result_parts.append(f"\n--- NO SPECIFIC DATA FOUND FOR {artist_name} ---")
 
-        # Similar artists content
         if similar_docs:
             result_parts.append(
                 f"\n--- SIMILAR {style.upper() if style else 'RAP'} ARTISTS ---"
             )
 
             similar_artists = set()
-            for doc in similar_docs[:3]:  # Limit to 3 examples
+            for doc in similar_docs[:3]:
                 artist = doc.metadata.get("artist", "Unknown")
                 similar_artists.add(artist)
 
@@ -216,7 +201,6 @@ class ArtistRetrievalTool(BaseTool):
                 f"\nSimilar Artists Found: {', '.join(sorted(similar_artists))}"
             )
 
-        # Footer with usage instructions
         result_parts.append("\n=== END ARTIST DATA ===")
         result_parts.append(
             f"Total Documents Retrieved: {len(artist_docs) + len(similar_docs)}"
@@ -230,5 +214,4 @@ class ArtistRetrievalTool(BaseTool):
         return "\n".join(result_parts)
 
 
-# Create tool instance
 artist_retrieval_tool = ArtistRetrievalTool()

@@ -227,10 +227,9 @@ async def judge_round_user(
     - The round must not already have a judgment
     - The winner must be one of the two rappers in the battle
     """
-    # Ensure the round_id in the path matches the round_id in the judgment
+
     judgment.round_id = round_id
 
-    # Call the battle service to process the user judgment
     try:
         battle = await battle_service.judge_round(battle_id, round_id, judgment)
         if not battle:
