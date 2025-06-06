@@ -10,7 +10,6 @@ from app.agents.parallel_workflow import execute_battle_round_parallel
 from app.models.battle import BattleResponse
 from app.models.round import Round
 from app.models.verse import Verse
-from app.services.data_cache_service import RapperCacheData
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ class VerseGenerationService:
         battle: BattleResponse,
         round_obj: Round,
         previous_verses: List[Dict[str, str]],
-        cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> Tuple[Optional[Verse], Optional[Verse]]:
         """
         Generate verses for both rappers in a round using parallel execution.
@@ -32,7 +30,6 @@ class VerseGenerationService:
             battle: The battle object
             round_obj: The round object
             previous_verses: List of previous verses for context
-            cached_data: Optional cached data for rappers
 
         Returns:
             Tuple[Optional[Verse], Optional[Verse]]: Generated verses for both rappers
@@ -51,7 +48,6 @@ class VerseGenerationService:
                 style2=battle.style2,
                 round_number=round_obj.round_number,
                 previous_verses=previous_verses,
-                cached_data=cached_data or {},
             )
 
             # Extract verses from the result

@@ -161,10 +161,10 @@ class ArtistRetrievalTool(BaseTool):
                 # Extract full lyrics from metadata
                 full_lyrics = doc.metadata.get("lyric", "")
                 if full_lyrics:
-                    # Show first 3000 characters of lyrics
+                    # Show first 1500 characters of lyrics
                     lyrics_preview = (
-                        full_lyrics[:3000] + "..."
-                        if len(full_lyrics) > 3000
+                        full_lyrics[:1500] + "..."
+                        if len(full_lyrics) > 1500
                         else full_lyrics
                     )
                     result_parts.append(f"\nLyrics Sample {i}:")
@@ -205,8 +205,8 @@ class ArtistRetrievalTool(BaseTool):
                 full_lyrics = doc.metadata.get("lyric", "")
                 if full_lyrics:
                     lyrics_preview = (
-                        full_lyrics[:3000] + "..."
-                        if len(full_lyrics) > 3000
+                        full_lyrics[:1500] + "..."
+                        if len(full_lyrics) > 1500
                         else full_lyrics
                     )
                     result_parts.append(f"\n{artist} Style Example:")

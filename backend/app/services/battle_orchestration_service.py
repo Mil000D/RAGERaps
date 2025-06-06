@@ -9,7 +9,6 @@ from uuid import UUID
 from app.models.battle import BattleCreate, BattleResponse
 from app.models.judgment import JudgmentCreate
 from app.services.battle_crud_service import battle_crud_service
-from app.services.data_cache_service import data_cache_service, RapperCacheData
 from app.services.judgment_service import judgment_service
 from app.services.round_management_service import round_management_service
 from app.services.verse_generation_service import verse_generation_service
@@ -25,7 +24,6 @@ class BattleOrchestrationService:
         self.verse_service = verse_generation_service
         self.round_service = round_management_service
         self.judgment_service = judgment_service
-        self.cache_service = data_cache_service
 
     async def generate_complete_battle(
         self, battle_data: BattleCreate
@@ -50,14 +48,9 @@ class BattleOrchestrationService:
             # Create the battle
             battle = self.crud_service.create_battle(battle_data)
 
-            # Get cached data for rappers
-            cached_data = await self._get_cached_rapper_data(
-                battle_data.rapper1_name, battle_data.rapper2_name
-            )
-
             # Generate all 3 rounds
             for round_number in range(1, 4):
-                await self._generate_battle_round(battle, round_number, cached_data)
+                await self._generate_battle_round(battle, round_number)
 
                 # Check if battle is complete (someone won 2 rounds)
                 if self.round_service.is_battle_complete(battle):
@@ -100,13 +93,8 @@ class BattleOrchestrationService:
             # Create the battle
             battle = self.crud_service.create_battle(battle_data)
 
-            # Get cached data for rappers
-            cached_data = await self._get_cached_rapper_data(
-                battle_data.rapper1_name, battle_data.rapper2_name
-            )
-
             # Generate first round
-            await self._generate_battle_round(battle, 1, cached_data)
+            await self._generate_battle_round(battle, 1)
 
             logger.info(f"Battle with first round generated successfully: {battle.id}")
             return battle
@@ -145,13 +133,8 @@ class BattleOrchestrationService:
                 logger.info(f"Battle {battle_id} has reached maximum rounds")
                 return battle
 
-            # Get cached data
-            cached_data = await self._get_cached_rapper_data(
-                battle.rapper1_name, battle.rapper2_name
-            )
-
             # Generate next round
-            await self._generate_battle_round(battle, next_round, cached_data)
+            await self._generate_battle_round(battle, next_round)
 
             # Check for completion
             if self.round_service.is_battle_complete(battle):
@@ -220,7 +203,6 @@ class BattleOrchestrationService:
         self,
         battle: BattleResponse,
         round_number: int,
-        cached_data: Dict[str, RapperCacheData],
     ) -> None:
         """
         Generate a complete battle round with verses.
@@ -228,7 +210,6 @@ class BattleOrchestrationService:
         Args:
             battle: Battle object
             round_number: Round number to generate
-            cached_data: Cached data for rappers
 
         Raises:
             Exception: If round generation fails
@@ -249,7 +230,7 @@ class BattleOrchestrationService:
                 rapper1_verse,
                 rapper2_verse,
             ) = await self.verse_service.generate_verses_for_round(
-                battle, round_obj, previous_verses, cached_data
+                battle, round_obj, previous_verses
             )
 
             if not rapper1_verse or not rapper2_verse:
@@ -269,36 +250,6 @@ class BattleOrchestrationService:
             logger.error(f"Failed to generate round {round_number}: {str(e)}")
             raise
 
-    async def _get_cached_rapper_data(
-        self, rapper1_name: str, rapper2_name: str
-    ) -> Dict[str, RapperCacheData]:
-        """
-        Get cached data for both rappers.
-
-        Args:
-            rapper1_name: Name of first rapper
-            rapper2_name: Name of second rapper
-
-        Returns:
-            Dict[str, RapperCacheData]: Cached data for both rappers
-        """
-        cached_data = {}
-
-        try:
-            rapper1_data = await self.cache_service.get_rapper_data(rapper1_name)
-            if rapper1_data:
-                cached_data[rapper1_name] = rapper1_data
-
-            rapper2_data = await self.cache_service.get_rapper_data(rapper2_name)
-            if rapper2_data:
-                cached_data[rapper2_name] = rapper2_data
-
-            logger.info(f"Retrieved cached data for {len(cached_data)} rappers")
-
-        except Exception as e:
-            logger.warning(f"Failed to get cached rapper data: {str(e)}")
-
-        return cached_data
 
 
 # Create singleton instance

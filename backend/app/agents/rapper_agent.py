@@ -7,11 +7,11 @@ from typing import Annotated, Dict, List, Optional, TypedDict
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph, add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from app.core.config import settings
-from app.services.data_cache_service import RapperCacheData, data_cache_service
 from app.services.prompt_service import prompt_service
 from app.tools.artist_retrieval_tool import artist_retrieval_tool
 
@@ -23,7 +23,6 @@ class RapperState(TypedDict):
     rapper_name: str
     opponent_name: str
     style: str
-    cached_data: Optional[Dict[str, RapperCacheData]]
     round_number: int
     is_first_round: bool
 
@@ -40,6 +39,9 @@ class RapperAgent:
             api_key=settings.openai_api_key,
             streaming=False,
         )
+        
+        # Initialize LangGraph memory
+        self.memory = MemorySaver()
 
         # Initialize tools with artist retrieval tool
         self.tools = [artist_retrieval_tool]
@@ -50,9 +52,11 @@ class RapperAgent:
         # Bind tools to the LLM (will be updated with MCP tools)
         self.llm_with_tools = self.llm.bind_tools(self.tools)
 
-        # Create the graph with the tools we have available
-        # This ensures we have a working graph even if MCP tools fail to load
-        self.graph = self._create_graph()
+        # Initialize graph as None - will be created after MCP tools are loaded
+        self.graph = None
+        
+        # Create initial graph with available tools for fallback
+        self._create_initial_graph()
 
     async def _init_mcp_tools(self, server_url="http://localhost:8888/mcp"):
         """
@@ -88,12 +92,15 @@ class RapperAgent:
 
             # Add MCP tools to the tools list
             self.tools.extend(self.mcp_tools)
+            print(f"Added {len(self.mcp_tools)} MCP tools to rapper agent: {[getattr(tool, 'name', 'unknown') for tool in self.mcp_tools]}")
 
             # Update the LLM with tools
             self.llm_with_tools = self.llm.bind_tools(self.tools)
+            print(f"LLM now bound with {len(self.tools)} total tools")
 
             # Create the graph with updated tools
             self.graph = self._create_graph()
+            print(f"Graph recreated with {len(self.tools)} tools available to ToolNode")
 
             print("MCP tools successfully initialized and integrated")
             return True
@@ -103,6 +110,11 @@ class RapperAgent:
             # We already created the graph in __init__ with style tools only
             return False
 
+    def _create_initial_graph(self):
+        """Create initial graph with current tools for fallback."""
+        if not self.graph:
+            self.graph = self._create_graph()
+    
     def _create_graph(self) -> StateGraph:
         """
         Create the LangGraph for the rapper agent.
@@ -114,7 +126,8 @@ class RapperAgent:
         # Define the nodes
         def rapper_node(state: RapperState):
             """Process the state and generate a response."""
-            # Generate a response
+            # For first round, allow LLM to directly use MCP tools if available
+            # The LangChain caching will automatically handle response caching
             response = self.llm_with_tools.invoke(state["messages"])
 
             # Return the response - LangGraph will handle tool call routing
@@ -143,126 +156,60 @@ class RapperAgent:
         # Set the entry point
         graph_builder.set_entry_point("rapper")
 
-        # Compile the graph
-        return graph_builder.compile()
+        # Compile the graph with memory checkpointer
+        return graph_builder.compile(checkpointer=self.memory)
 
-    async def _get_or_fetch_rapper_data(
-        self,
-        rapper_name: str,
-        opponent_name: str,
-        is_first_round: bool,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None,
-    ) -> Dict[str, RapperCacheData]:
+    def _get_thread_id(self, rapper_name: str, opponent_name: str, style: str) -> str:
         """
-        Get or fetch rapper data, using cache when available.
-
+        Generate a consistent thread ID for conversation memory.
+        
         Args:
             rapper_name: Name of the rapper
             opponent_name: Name of the opponent
-            is_first_round: Whether this is the first round
-            cached_data: Existing cached data
-
+            style: Rap style
+            
         Returns:
-            Dict[str, RapperCacheData]: Cached data for both rappers
+            str: Thread ID for memory storage
         """
-        result_cache = cached_data or {}
+        # Create a consistent thread ID based on battle participants and style
+        # This ensures the same battle context is maintained across rounds
+        battle_context = f"{rapper_name.lower()}_{opponent_name.lower()}_{style.lower()}"
+        return f"battle_{hash(battle_context) % 1000000}"
 
-        # If not first round and we have cached data, return it
-        if not is_first_round and cached_data:
-            return result_cache
-
-        # For first round, fetch data if not already cached
-        for name in [rapper_name, opponent_name]:
-            cache_key = name.lower().strip()
-
-            # Check if we already have cached data for this rapper
-            if cache_key in result_cache:
-                continue
-
-            # Try to get from cache service
-            cached_rapper_data = await data_cache_service.get_rapper_data(name)
-
-            if cached_rapper_data:
-                result_cache[cache_key] = cached_rapper_data
-            else:
-                # Need to fetch data using MCP tools
-                if is_first_round and self.mcp_tools:
-                    rapper_data = await self._fetch_rapper_data_with_tools(name)
-                    result_cache[cache_key] = rapper_data
-
-                    # Cache the data for future use
-                    await data_cache_service.cache_rapper_data(
-                        rapper_name=name,
-                        biographical_info=rapper_data.biographical_info,
-                        wikipedia_info=rapper_data.wikipedia_info,
-                        internet_search_info=rapper_data.internet_search_info,
-                        style_info=rapper_data.style_info,
-                    )
-                else:
-                    # Create empty cache data if no tools available
-                    result_cache[cache_key] = RapperCacheData(rapper_name=name)
-
-        return result_cache
-
-    async def _fetch_rapper_data_with_tools(self, rapper_name: str) -> RapperCacheData:
+    def _get_available_tools_info(self) -> str:
         """
-        Fetch rapper data using MCP tools.
-
-        Args:
-            rapper_name: Name of the rapper
-
+        Get information about available tools for the LLM.
+        
         Returns:
-            RapperCacheData: Fetched data
+            str: Formatted string describing available tools
         """
-        rapper_data = RapperCacheData(rapper_name=rapper_name)
-
-        try:
-            # Try to find the search tools
-            wikipedia_tool = None
-            internet_tool = None
-
-            for tool in self.mcp_tools:
-                tool_name = getattr(tool, "name", "")
-                if tool_name == "search_wikipedia":
-                    wikipedia_tool = tool
-                elif tool_name == "search_internet":
-                    internet_tool = tool
-
-            # Fetch Wikipedia information
-            if wikipedia_tool:
-                try:
-                    wikipedia_result = await wikipedia_tool.ainvoke(
-                        {"query": rapper_name}
-                    )
-                    rapper_data.wikipedia_info = str(wikipedia_result)
-                except Exception as e:
-                    print(f"Error fetching Wikipedia data for {rapper_name}: {e}")
-
-            # Fetch internet search information
-            if internet_tool:
-                try:
-                    internet_result = await internet_tool.ainvoke(
-                        {"query": rapper_name}
-                    )
-                    rapper_data.internet_search_info = str(internet_result)
-                except Exception as e:
-                    print(f"Error fetching internet data for {rapper_name}: {e}")
-
-            # Combine biographical info
-            bio_parts = []
-            if rapper_data.wikipedia_info:
-                bio_parts.append(f"Wikipedia: {rapper_data.wikipedia_info}")
-            if rapper_data.internet_search_info:
-                bio_parts.append(f"Internet: {rapper_data.internet_search_info}")
-
-            rapper_data.biographical_info = (
-                "\n\n".join(bio_parts) if bio_parts else None
-            )
-
-        except Exception as e:
-            print(f"Error fetching data for {rapper_name}: {e}")
-
-        return rapper_data
+        tool_descriptions = []
+        
+        # Always include artist retrieval tool
+        tool_descriptions.append(
+            "- retrieve_artist_data: Get artist lyrics and style data from vector store. "
+            "IMPORTANT: Always pass the 'style' parameter when you know the rap style."
+        )
+        
+        # Add MCP tools if available
+        for tool in self.mcp_tools:
+            tool_name = getattr(tool, "name", "unknown")
+            tool_desc = getattr(tool, "description", "No description available")
+            tool_descriptions.append(f"- {tool_name}: {tool_desc}")
+        
+        if tool_descriptions:
+            tools_info = "\n".join(tool_descriptions)
+            return f"You have access to the following tools:\n{tools_info}\n\nUse these tools to gather information about the rappers when needed. LangChain's caching will automatically handle repeated requests."
+        
+        return ""
+    
+    def get_current_tools_debug(self) -> str:
+        """Debug method to show current tools available."""
+        tool_list = []
+        for tool in self.tools:
+            tool_name = getattr(tool, "name", "unknown")
+            tool_list.append(tool_name)
+        return f"Current tools in self.tools: {tool_list} (Total: {len(self.tools)})"
 
     async def generate_verse(
         self,
@@ -271,7 +218,6 @@ class RapperAgent:
         style: str,
         round_number: int,
         previous_verses: Optional[List[Dict]] = None,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None,
     ) -> str:
         """
         Generate a rap verse using available tools for artist data retrieval.
@@ -282,7 +228,6 @@ class RapperAgent:
             style: Rap style
             round_number: Current round number
             previous_verses: Previous verses in the battle
-            cached_data: Cached data for rappers (used to avoid redundant API calls)
 
         Returns:
             str: Generated verse
@@ -297,25 +242,22 @@ class RapperAgent:
             # Determine if this is the first round
             is_first_round = round_number == 1
 
-            # Get or fetch rapper data using cache
-            rapper_cache_data = await self._get_or_fetch_rapper_data(
-                rapper_name=rapper_name,
-                opponent_name=opponent_name,
-                is_first_round=is_first_round,
-                cached_data=cached_data,
-            )
+            # Get thread ID for memory persistence
+            thread_id = self._get_thread_id(rapper_name, opponent_name, style)
+            config = {"configurable": {"thread_id": thread_id}}
 
-            # Create the system message with cached data
+            # Create the system message with available tools info
             system_message = self._create_system_message(
                 rapper_name,
                 opponent_name,
                 style,
                 round_number,
                 previous_verses,
-                rapper_cache_data,
+                available_tools=self._get_available_tools_info(),
             )
 
             # Create the human message using prompt service
+            # Ensure style parameter is properly passed for artist_retrieval_tool caching
             human_template = prompt_service.get_prompt(
                 "rapper", "human_message", "template"
             )
@@ -331,14 +273,12 @@ class RapperAgent:
                 "rapper_name": rapper_name,
                 "opponent_name": opponent_name,
                 "style": style,
-                "context": None,
-                "cached_data": rapper_cache_data,
                 "round_number": round_number,
                 "is_first_round": is_first_round,
             }
 
-            # Run the graph
-            result = await self.graph.ainvoke(initial_state)
+            # Run the graph with memory config
+            result = await self.graph.ainvoke(initial_state, config)
 
             # Extract the verse from the result
             verse_content = self._extract_verse(result["messages"])
@@ -355,7 +295,7 @@ class RapperAgent:
         style: str,
         round_number: int,
         previous_verses: Optional[List[Dict]] = None,
-        cached_data: Optional[Dict[str, RapperCacheData]] = None,
+        available_tools: Optional[str] = None,
     ) -> SystemMessage:
         """
         Create a system message for the rapper agent using the prompt service.
@@ -366,29 +306,15 @@ class RapperAgent:
             style: Rap style
             round_number: Current round number
             previous_verses: Previous verses in the battle
-            cached_data: Cached data for rappers
+            available_tools: Information about available tools
 
         Returns:
             SystemMessage: The created system message
         """
-        # Determine if biographical info is available
+        # With LangGraph memory, biographical info will be retained in conversation history
         has_biographical_info = False
         biographical_info = None
         opponent_biographical_info = None
-
-        if cached_data:
-            rapper_key = rapper_name.lower().strip()
-            opponent_key = opponent_name.lower().strip()
-
-            if (
-                rapper_key in cached_data
-                and cached_data[rapper_key].biographical_info
-                and opponent_key in cached_data
-                and cached_data[opponent_key].biographical_info
-            ):
-                has_biographical_info = True
-                biographical_info = cached_data[rapper_key].biographical_info
-                opponent_biographical_info = cached_data[opponent_key].biographical_info
 
         # Use prompt service to create the system message
         system_content = prompt_service.get_rapper_system_message(
@@ -402,6 +328,10 @@ class RapperAgent:
             is_first_round=(round_number == 1),
             previous_verses=previous_verses,
         )
+        
+        # Add available tools information to system content if tools are available
+        if available_tools:
+            system_content += f"\n\nAVAILABLE TOOLS:\n{available_tools}"
 
         return SystemMessage(content=system_content)
 
