@@ -1,6 +1,5 @@
 .battle-arena {
-  min-width: fit-content;
-  width: 60vw;
+  max-width: 70vw;
   margin: 0 auto;
   padding: 20px;
 }
@@ -10,8 +9,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 2rem;
-  width: 60vw;
-  min-width: fit-content;
+  max-width: 100%;
   margin: 0 auto;
 }
 
